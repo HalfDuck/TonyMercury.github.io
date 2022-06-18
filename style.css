@@ -1671,7 +1671,7 @@ body {
 }
 
 .mask {
-  background: url(/background.jpg);
+  background-image: url(/background.jpg);
   position: absolute;
   left: 0;
   right: 0;
