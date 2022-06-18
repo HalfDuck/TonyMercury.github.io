@@ -1672,6 +1672,8 @@ body {
 
 .mask {
   background-image: url(/background.jpg);
+  background-size: cover;
+  background-attachment: fixed;
   position: absolute;
   left: 0;
   right: 0;
