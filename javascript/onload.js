@@ -3,7 +3,7 @@ printTime();
 gotop();
 gobottom();
 showbtn();
-
+huoqu();
 
 
 }
