@@ -77,3 +77,10 @@ function printTime(){
             this.style.background='black';
         }
 })();
+
+// 显示qq图片
+function huoqu(){
+    var value=document.getElementById('qq').value;
+    img1.src="http://q1.qlogo.cn/g?b=qq&nk="+value+"&s=640";//&s是尺寸  有40 100 140 640
+}
+
