@@ -653,9 +653,9 @@ section.dark p {
   color: #FFF;
 }
 .hero .image {
-  top: -50px;
-  right: 110px;
-  position: absolute !important;
+  top: -60px;
+  right: 0px;
+  position: absolute;
 }
 .hero .scroll-down-icon {
   color: #FFF;
