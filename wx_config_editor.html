@@ -1297,36 +1297,35 @@
     }
 
     function extractUiLevel3() {
+      if (!configData) return;
+      configData.weights = configData.weights || {};
+      configData.weights.level3 = configData.weights.level3 || {};
       const metaGroups = configData?.meta?.ui_level3_groups;
-      if (metaGroups && typeof metaGroups === 'object') {
-        const cloned = {};
+      const currentLevel3 = configData.weights.level3 || {};
+      const level3Keys = Object.keys(currentLevel3);
+      const level2Parents = configData.weights.level2 || {};
+      const looksFlattened = level3Keys.length > 0 && level3Keys.every((key) => level2Parents[key]);
+
+      if (metaGroups && typeof metaGroups === 'object' && (!level3Keys.length || looksFlattened)) {
+        const restored = {};
         Object.entries(metaGroups).forEach(([group, metrics]) => {
-          cloned[group] = {...metrics};
+          restored[group] = {...metrics};
         });
-        configData.weights = configData.weights || {};
-        configData.weights.level3 = cloned;
+        configData.weights.level3 = restored;
+      }
+
+      if (configData.meta && Object.prototype.hasOwnProperty.call(configData.meta, 'ui_level3_groups')) {
+        delete configData.meta.ui_level3_groups;
       }
     }
 
     function buildServerPayload() {
       const payload = JSON.parse(JSON.stringify(configData || {}));
-      const weights = payload.weights || {};
-      const level2 = weights.level2 || {};
-      const level3 = configData?.weights?.level3 || {};
-      const normalized = {};
-      Object.entries(level2).forEach(([parent, children]) => {
-        normalized[parent] = {};
-        Object.keys(children || {}).forEach((childKey) => {
-          const metrics = level3[childKey] || {};
-          Object.entries(metrics).forEach(([metricKey, metricWeight]) => {
-            normalized[parent][metricKey] = metricWeight;
-          });
-        });
-      });
       payload.weights = payload.weights || {};
-      payload.weights.level3 = normalized;
-      payload.meta = payload.meta || {};
-      payload.meta.ui_level3_groups = JSON.parse(JSON.stringify(level3));
+      payload.weights.level3 = JSON.parse(JSON.stringify(configData?.weights?.level3 || {}));
+      if (payload.meta && Object.prototype.hasOwnProperty.call(payload.meta, 'ui_level3_groups')) {
+        delete payload.meta.ui_level3_groups;
+      }
       return payload;
     }
 
