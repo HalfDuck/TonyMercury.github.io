@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>WX 配置编辑器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f172a;
+      --bg-secondary: #111c32;
+      --bg-tertiary: #152344;
+      --accent: #38bdf8;
+      --accent-muted: rgba(56, 189, 248, 0.15);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #1e293b;
+      font-size: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: radial-gradient(circle at top, rgba(148, 163, 184, 0.07), transparent 55%),
+                  radial-gradient(circle at bottom, rgba(59, 130, 246, 0.05), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      backdrop-filter: blur(12px);
+      background: rgba(15, 23, 42, 0.8);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 1rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem 2rem;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      margin: 0;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    button, .tab {
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--text);
+      border-radius: 9999px;
+      padding: 0.6rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: background 0.2s ease, border 0.2s ease, transform 0.2s ease;
+    }
+
+    button:hover, .tab:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.35);
+      transform: translateY(-1px);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.8), rgba(59, 130, 246, 0.8));
+      border-color: rgba(56, 189, 248, 0.6);
+    }
+
+    button.danger {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fecaca;
+    }
+
+    main {
+      padding: 2rem;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .tabbar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tab.active {
+      background: rgba(56, 189, 248, 0.35);
+      border-color: rgba(56, 189, 248, 0.6);
+      color: #0f172a;
+    }
+
+    section {
+      display: none;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.75rem;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
+    }
+
+    section.active {
+      display: block;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 1.25rem;
+      font-size: 1.25rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #bae6fd;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .two-col {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .card {
+      background: var(--bg-tertiary);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 16px;
+      padding: 1rem;
+      display: grid;
+      gap: 0.75rem;
+      position: relative;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    input, textarea, select {
+      background: var(--bg-secondary);
+      color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 10px;
+      padding: 0.6rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: border 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.6);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+    }
+
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+
+    th, td {
+      padding: 0.5rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      font-size: 0.9rem;
+    }
+
+    th {
+      text-align: left;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(56, 189, 248, 0.12);
+      color: #bae6fd;
+      border-radius: 9999px;
+      padding: 0.35rem 0.8rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .group-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .group-card {
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 1rem;
+      display: grid;
+      gap: 0.75rem;
+      position: relative;
+    }
+
+    .group-header {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .group-header input {
+      flex: 1;
+      font-weight: 600;
+    }
+
+    .muted-btn {
+      background: rgba(15, 23, 42, 0.35);
+      border-color: rgba(148, 163, 184, 0.2);
+      color: var(--text-muted);
+    }
+
+    .status-bar {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      min-width: 260px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 16px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.4);
+      display: grid;
+      gap: 0.35rem;
+      opacity: 0;
+      transform: translateY(20px);
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .status-bar.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .status-title {
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #38bdf8;
+      font-size: 0.8rem;
+    }
+
+    .status-message {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .rule-card {
+      display: grid;
+      gap: 0.75rem;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 14px;
+      padding: 1rem;
+      background: rgba(17, 28, 50, 0.85);
+    }
+
+    .rule-conditions {
+      display: grid;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .condition-row {
+      display: grid;
+      gap: 0.6rem;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+
+    .flex {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .scroll {
+      overflow: auto;
+      max-height: 60vh;
+      padding-right: 0.25rem;
+    }
+
+    .small {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 900px) {
+      header {
+        padding: 1rem;
+      }
+
+      main {
+        padding: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>WX CONFIG • 暗色编辑面板</h1>
+    <div class="actions">
+      <button id="reloadBtn" class="muted-btn">重新加载</button>
+      <button id="validateBtn" class="muted-btn">校验配置</button>
+      <button id="saveBtn" class="primary">保存配置</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabbar">
+      <button class="tab active" data-tab="overview">概览</button>
+      <button class="tab" data-tab="level3">三级指标</button>
+      <button class="tab" data-tab="cpt">条件概率 (CPT)</button>
+      <button class="tab" data-tab="rules">规则</button>
+      <button class="tab" data-tab="weights">权重</button>
+      <button class="tab" data-tab="calibration">校准/阈值</button>
+      <button class="tab" data-tab="meta">元信息</button>
+    </div>
+
+    <section id="overview" class="active">
+      <div class="grid two-col">
+        <div class="card">
+          <h2>配置摘要</h2>
+          <div id="overviewSummary" class="grid" style="gap:0.5rem"></div>
+        </div>
+        <div class="card">
+          <h2>版本快照</h2>
+          <div class="grid" style="gap:0.5rem">
+            <div class="flex" style="align-items:center;justify-content:space-between">
+              <span class="chip">服务器状态</span>
+              <button id="loadVersions" class="muted-btn" style="padding:0.5rem 1rem">刷新版本</button>
+            </div>
+            <div id="versionList" class="scroll" style="max-height:280px"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="level3">
+      <div class="section-header">
+        <h2>三级指标权重</h2>
+        <button id="addLevel3Group" class="muted-btn">新增指标组</button>
+      </div>
+      <div id="level3Container" class="group-list"></div>
+    </section>
+
+    <section id="cpt">
+      <div class="section-header">
+        <h2>条件概率 (CPT)</h2>
+        <button id="addCptEntry" class="muted-btn">新增 CPT 条目</button>
+      </div>
+      <div id="cptContainer" class="grid" style="gap:1rem"></div>
+    </section>
+
+    <section id="rules">
+      <div class="section-header">
+        <h2>规则编辑</h2>
+        <button id="addRule" class="muted-btn">新增规则</button>
+      </div>
+      <div id="rulesContainer" class="grid" style="gap:1rem"></div>
+    </section>
+
+    <section id="weights">
+      <h2>权重 • Level1 / Level2</h2>
+      <div class="grid two-col">
+        <div class="card">
+          <h3 class="chip">Level 1</h3>
+          <div id="level1Weights" class="grid" style="gap:0.75rem"></div>
+        </div>
+        <div class="card">
+          <h3 class="chip">Level 2</h3>
+          <div id="level2Weights" class="grid" style="gap:1rem"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="calibration">
+      <h2>校准 & 阈值</h2>
+      <div class="grid two-col">
+        <div class="card">
+          <h3 class="chip">Calibration</h3>
+          <div id="calibrationContainer" class="grid" style="gap:0.75rem"></div>
+        </div>
+        <div class="card">
+          <h3 class="chip">Thresholds</h3>
+          <div id="thresholdsContainer" class="grid" style="gap:0.75rem"></div>
+          <button id="addThreshold" class="muted-btn" style="margin-top:0.5rem">新增阈值</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="meta">
+      <h2>元信息</h2>
+      <div class="grid two-col">
+        <div class="card">
+          <h3 class="chip">Meta</h3>
+          <label>
+            Notes
+            <textarea id="metaNotes"></textarea>
+          </label>
+          <label>
+            Version
+            <input id="metaVersion" />
+          </label>
+          <label>
+            Updated At
+            <input id="metaUpdated" />
+          </label>
+        </div>
+        <div class="card">
+          <h3 class="chip">Units</h3>
+          <div id="metaUnits" class="grid" style="gap:0.75rem"></div>
+          <button id="addUnit" class="muted-btn" style="margin-top:0.5rem">新增单位</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="statusBar" class="status-bar">
+    <span class="status-title" id="statusTitle"></span>
+    <span class="status-message" id="statusMessage"></span>
+  </div>
+
+  <template id="level3GroupTemplate">
+    <div class="group-card">
+      <div class="group-header">
+        <input class="group-name" />
+        <button class="muted-btn rename-group">重命名</button>
+        <button class="danger delete-group">删除</button>
+      </div>
+      <div class="metrics"></div>
+      <button class="muted-btn add-metric" style="align-self:flex-start">新增指标</button>
+    </div>
+  </template>
+
+  <template id="metricRowTemplate">
+    <div class="flex" style="align-items:flex-end">
+      <label style="flex:1">
+        指标名称
+        <input class="metric-name" />
+      </label>
+      <label style="width:140px">
+        权重
+        <input type="number" step="0.01" class="metric-value" />
+      </label>
+      <button class="danger delete-metric" style="height:40px">删除</button>
+    </div>
+  </template>
+
+  <script>
+    const API_BASE = '/api/wx/config';
+    let configData = null;
+
+    const qs = (sel, parent = document) => parent.querySelector(sel);
+    const qsa = (sel, parent = document) => Array.from(parent.querySelectorAll(sel));
+
+    function showStatus(title, message, timeout = 2800) {
+      const bar = qs('#statusBar');
+      qs('#statusTitle').textContent = title;
+      qs('#statusMessage').textContent = message;
+      bar.classList.add('show');
+      if (timeout) {
+        setTimeout(() => bar.classList.remove('show'), timeout);
+      }
+    }
+
+    function fetchJSON(url, options) {
+      return fetch(url, options).then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || '请求失败');
+        }
+        return data;
+      });
+    }
+
+    async function loadConfig() {
+      try {
+        configData = await fetchJSON(API_BASE);
+        renderAll();
+        showStatus('加载完成', '配置已同步');
+      } catch (err) {
+        console.error(err);
+        showStatus('错误', err.message, 4500);
+      }
+    }
+
+    function renderAll() {
+      if (!configData) return;
+      renderOverview();
+      renderLevel3();
+      renderCPT();
+      renderRules();
+      renderWeights();
+      renderCalibration();
+      renderMeta();
+    }
+
+    function renderOverview() {
+      const summary = qs('#overviewSummary');
+      summary.innerHTML = '';
+      const items = [
+        ['版本', configData.version],
+        ['更新时间', configData.updated_at],
+        ['规则数量', configData.rules?.length ?? 0],
+        ['阈值数量', configData.thresholds?.length ?? 0],
+        ['CPT 项目', Object.keys(configData.cpt || {}).length],
+        ['三级指标组', Object.keys(configData.weights?.level3 || {}).length]
+      ];
+      for (const [label, value] of items) {
+        const row = document.createElement('div');
+        row.innerHTML = `<span class="chip">${label}</span><div style="font-size:1rem;font-weight:600">${value ?? '—'}</div>`;
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.justifyContent = 'space-between';
+        summary.appendChild(row);
+      }
+    }
+
+    async function loadVersions() {
+      try {
+        const data = await fetchJSON('/api/wx/config/versions');
+        const box = qs('#versionList');
+        box.innerHTML = '';
+        if (!data.length) {
+          box.innerHTML = '<div class="small">暂无快照</div>';
+          return;
+        }
+        data.forEach(v => {
+          const item = document.createElement('div');
+          item.className = 'card';
+          item.style.padding = '0.75rem';
+          item.style.gap = '0.35rem';
+          item.innerHTML = `
+            <div style="font-weight:600">${v.name}</div>
+            <div class="small">${new Date(v.modified).toLocaleString()}</div>
+            <div class="small">${(v.size / 1024).toFixed(2)} KB</div>
+            <button class="muted-btn" style="padding:0.35rem 0.8rem">恢复此版本</button>
+          `;
+          item.querySelector('button').addEventListener('click', async () => {
+            if (!confirm('确认恢复该版本? 当前配置将被覆盖。')) return;
+            try {
+              await fetchJSON('/api/wx/config/restore', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: v.name})
+              });
+              showStatus('恢复完成', `已恢复版本 ${v.name}`);
+              loadConfig();
+            } catch (err) {
+              showStatus('错误', err.message, 4000);
+            }
+          });
+          box.appendChild(item);
+        });
+      } catch (err) {
+        showStatus('错误', err.message, 4000);
+      }
+    }
+
+    function renderLevel3() {
+      const container = qs('#level3Container');
+      container.innerHTML = '';
+      const level3 = configData.weights?.level3 || {};
+      const template = qs('#level3GroupTemplate');
+      const metricTemplate = qs('#metricRowTemplate');
+
+      Object.entries(level3).forEach(([groupKey, metrics]) => {
+        const node = template.content.firstElementChild.cloneNode(true);
+        const nameInput = node.querySelector('.group-name');
+        nameInput.value = groupKey;
+        nameInput.dataset.original = groupKey;
+
+        node.querySelector('.rename-group').addEventListener('click', () => {
+          const newName = nameInput.value.trim();
+          const orig = nameInput.dataset.original;
+          if (!newName || newName === orig) return;
+          if (configData.weights.level3[newName]) {
+            showStatus('重命名失败', '存在同名指标组');
+            nameInput.value = orig;
+            return;
+          }
+          configData.weights.level3[newName] = configData.weights.level3[orig];
+          delete configData.weights.level3[orig];
+          renderLevel3();
+          showStatus('已更新', `组 ${orig} -> ${newName}`);
+        });
+
+        node.querySelector('.delete-group').addEventListener('click', () => {
+          if (!confirm(`删除指标组 ${groupKey}?`)) return;
+          delete configData.weights.level3[groupKey];
+          renderLevel3();
+        });
+
+        const metricBox = node.querySelector('.metrics');
+        metricBox.style.display = 'grid';
+        metricBox.style.gap = '0.75rem';
+
+        Object.entries(metrics).forEach(([metricKey, metricVal]) => {
+          const row = metricTemplate.content.firstElementChild.cloneNode(true);
+          const nameField = row.querySelector('.metric-name');
+          const valueField = row.querySelector('.metric-value');
+          nameField.value = metricKey;
+          valueField.value = metricVal;
+
+          nameField.addEventListener('change', () => {
+            const newKey = nameField.value.trim();
+            if (!newKey) {
+              nameField.value = metricKey;
+              return;
+            }
+            if (newKey !== metricKey && metrics[newKey] !== undefined) {
+              showStatus('更新失败', '同组内存在同名指标');
+              nameField.value = metricKey;
+              return;
+            }
+            if (newKey === metricKey) return;
+            metrics[newKey] = metrics[metricKey];
+            delete metrics[metricKey];
+            renderLevel3();
+          });
+
+          valueField.addEventListener('input', () => {
+            const val = parseFloat(valueField.value);
+            metrics[nameField.value.trim()] = isFinite(val) ? val : 0;
+          });
+
+          row.querySelector('.delete-metric').addEventListener('click', () => {
+            if (!confirm(`删除指标 ${metricKey}?`)) return;
+            delete metrics[metricKey];
+            renderLevel3();
+          });
+
+          metricBox.appendChild(row);
+        });
+
+        node.querySelector('.add-metric').addEventListener('click', () => {
+          let idx = 1;
+          const metricsObj = configData.weights.level3[groupKey];
+          let newName = `new_metric_${idx}`;
+          while (metricsObj[newName] !== undefined) {
+            idx += 1;
+            newName = `new_metric_${idx}`;
+          }
+          metricsObj[newName] = 0;
+          renderLevel3();
+        });
+
+        container.appendChild(node);
+      });
+    }
+
+    function renderCPT() {
+      const container = qs('#cptContainer');
+      container.innerHTML = '';
+      const cpt = configData.cpt || {};
+      Object.entries(cpt).forEach(([key, value]) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="flex" style="justify-content:space-between;align-items:center">
+            <span class="chip">${key}</span>
+            <div class="flex">
+              <button class="muted-btn apply-json">应用修改</button>
+              <button class="danger delete-json">删除</button>
+            </div>
+          </div>
+          <textarea class="json-editor"></textarea>
+        `;
+        const textarea = card.querySelector('.json-editor');
+        textarea.value = JSON.stringify(value, null, 2);
+        card.querySelector('.apply-json').addEventListener('click', () => {
+          try {
+            configData.cpt[key] = JSON.parse(textarea.value);
+            showStatus('已更新', `CPT: ${key}`);
+          } catch (err) {
+            showStatus('解析错误', err.message, 4000);
+          }
+        });
+        card.querySelector('.delete-json').addEventListener('click', () => {
+          if (!confirm(`删除 CPT 条目 ${key}?`)) return;
+          delete configData.cpt[key];
+          renderCPT();
+        });
+        container.appendChild(card);
+      });
+    }
+
+    function renderRules() {
+      const container = qs('#rulesContainer');
+      container.innerHTML = '';
+      const rules = configData.rules || [];
+      rules.forEach((rule, idx) => {
+        const card = document.createElement('div');
+        card.className = 'rule-card';
+        card.innerHTML = `
+          <div class="flex" style="justify-content:space-between;align-items:center">
+            <input class="rule-name" value="${rule.name || ''}" style="flex:1" />
+            <button class="danger delete-rule" style="height:40px">删除</button>
+          </div>
+          <div>
+            <div class="chip" style="margin-bottom:0.5rem">条件 IF</div>
+            <div class="rule-conditions"></div>
+            <button class="muted-btn add-condition" style="margin-top:0.5rem">新增条件</button>
+          </div>
+          <div>
+            <div class="chip" style="margin-bottom:0.5rem">结果 THEN</div>
+            <textarea class="rule-then"></textarea>
+          </div>
+        `;
+        const nameInput = card.querySelector('.rule-name');
+        nameInput.addEventListener('input', () => {
+          configData.rules[idx].name = nameInput.value;
+        });
+
+        const thenBox = card.querySelector('.rule-then');
+        thenBox.value = JSON.stringify(rule.then || {}, null, 2);
+        thenBox.addEventListener('change', () => {
+          try {
+            configData.rules[idx].then = JSON.parse(thenBox.value);
+            showStatus('已更新', `规则 ${idx + 1} THEN`);
+          } catch (err) {
+            showStatus('解析错误', err.message, 4000);
+          }
+        });
+
+        const conditionsBox = card.querySelector('.rule-conditions');
+        (rule.if || []).forEach((cond, cIdx) => {
+          const row = document.createElement('div');
+          row.className = 'condition-row';
+          row.innerHTML = `
+            <label>变量<input class="cond-var" value="${cond.var ?? ''}"></label>
+            <label>操作符<input class="cond-op" value="${cond.op ?? ''}"></label>
+            <label>值<textarea class="cond-value" style="min-height:60px"></textarea></label>
+            <button class="danger delete-condition" style="height:40px">删除</button>
+          `;
+          const valueArea = row.querySelector('.cond-value');
+          valueArea.value = JSON.stringify(cond.value, null, 2);
+
+          row.querySelector('.cond-var').addEventListener('input', (e) => {
+            configData.rules[idx].if[cIdx].var = e.target.value;
+          });
+          row.querySelector('.cond-op').addEventListener('input', (e) => {
+            configData.rules[idx].if[cIdx].op = e.target.value;
+          });
+          valueArea.addEventListener('change', () => {
+            try {
+              configData.rules[idx].if[cIdx].value = JSON.parse(valueArea.value);
+              showStatus('已更新', `规则 ${idx + 1} 条件`);
+            } catch (err) {
+              showStatus('解析错误', err.message, 4000);
+            }
+          });
+          row.querySelector('.delete-condition').addEventListener('click', () => {
+            configData.rules[idx].if.splice(cIdx, 1);
+            renderRules();
+          });
+          conditionsBox.appendChild(row);
+        });
+
+        card.querySelector('.add-condition').addEventListener('click', () => {
+          configData.rules[idx].if = configData.rules[idx].if || [];
+          configData.rules[idx].if.push({op: '', var: '', value: ''});
+          renderRules();
+        });
+
+        card.querySelector('.delete-rule').addEventListener('click', () => {
+          if (!confirm(`删除规则 ${rule.name || idx + 1}?`)) return;
+          configData.rules.splice(idx, 1);
+          renderRules();
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    function renderWeights() {
+      const level1Box = qs('#level1Weights');
+      const level2Box = qs('#level2Weights');
+      level1Box.innerHTML = '';
+      level2Box.innerHTML = '';
+
+      const level1 = configData.weights?.level1 || {};
+      Object.entries(level1).forEach(([key, val]) => {
+        const row = document.createElement('div');
+        row.className = 'flex';
+        row.style.alignItems = 'center';
+        row.innerHTML = `
+          <label style="flex:1">
+            ${key}
+            <input type="number" step="0.01" value="${val}" />
+          </label>
+        `;
+        row.querySelector('input').addEventListener('input', (e) => {
+          configData.weights.level1[key] = parseFloat(e.target.value) || 0;
+        });
+        level1Box.appendChild(row);
+      });
+
+      const level2 = configData.weights?.level2 || {};
+      Object.entries(level2).forEach(([groupKey, entries]) => {
+        const card = document.createElement('div');
+        card.className = 'group-card';
+        card.innerHTML = `
+          <div class="chip">${groupKey}</div>
+          <div class="grid" style="gap:0.5rem"></div>
+        `;
+        const grid = card.querySelector('.grid');
+        Object.entries(entries).forEach(([key, val]) => {
+          const row = document.createElement('div');
+          row.innerHTML = `
+            <label>${key}<input type="number" step="0.01" value="${val}" /></label>
+          `;
+          row.querySelector('input').addEventListener('input', (e) => {
+            configData.weights.level2[groupKey][key] = parseFloat(e.target.value) || 0;
+          });
+          grid.appendChild(row);
+        });
+        level2Box.appendChild(card);
+      });
+    }
+
+    function renderCalibration() {
+      const caliBox = qs('#calibrationContainer');
+      const thresholdsBox = qs('#thresholdsContainer');
+      caliBox.innerHTML = '';
+      thresholdsBox.innerHTML = '';
+
+      const calibration = configData.calibration || {};
+      Object.entries(calibration).forEach(([key, value]) => {
+        const card = document.createElement('div');
+        card.className = 'group-card';
+        card.innerHTML = `
+          <div class="flex" style="justify-content:space-between;align-items:center">
+            <span class="chip">${key}</span>
+            <button class="muted-btn apply-json">应用修改</button>
+          </div>
+          <textarea class="json-editor"></textarea>
+        `;
+        const textarea = card.querySelector('.json-editor');
+        textarea.value = JSON.stringify(value, null, 2);
+        card.querySelector('.apply-json').addEventListener('click', () => {
+          try {
+            calibration[key] = JSON.parse(textarea.value);
+            showStatus('已更新', `校准 ${key}`);
+          } catch (err) {
+            showStatus('解析错误', err.message, 4000);
+          }
+        });
+        caliBox.appendChild(card);
+      });
+
+      (configData.thresholds || []).forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'card';
+        row.innerHTML = `
+          <div class="flex" style="gap:0.75rem">
+            <label style="flex:1">标签<input value="${item.label || ''}" class="th-label" /></label>
+            <label style="width:120px">等级<input value="${item.level || ''}" class="th-level" /></label>
+            <label style="width:140px">最小值<input type="number" step="0.01" value="${item.min ?? ''}" class="th-min" /></label>
+            <button class="danger delete-th" style="height:40px">删除</button>
+          </div>
+        `;
+        row.querySelector('.th-label').addEventListener('input', (e) => {
+          configData.thresholds[idx].label = e.target.value;
+        });
+        row.querySelector('.th-level').addEventListener('input', (e) => {
+          configData.thresholds[idx].level = e.target.value;
+        });
+        row.querySelector('.th-min').addEventListener('input', (e) => {
+          configData.thresholds[idx].min = parseFloat(e.target.value) || 0;
+        });
+        row.querySelector('.delete-th').addEventListener('click', () => {
+          configData.thresholds.splice(idx, 1);
+          renderCalibration();
+        });
+        thresholdsBox.appendChild(row);
+      });
+    }
+
+    function renderMeta() {
+      qs('#metaNotes').value = configData.meta?.notes || '';
+      qs('#metaVersion').value = configData.version || '';
+      qs('#metaUpdated').value = configData.updated_at || '';
+
+      qs('#metaNotes').addEventListener('input', (e) => {
+        configData.meta = configData.meta || {};
+        configData.meta.notes = e.target.value;
+      });
+      qs('#metaVersion').addEventListener('input', (e) => {
+        configData.version = e.target.value;
+      });
+      qs('#metaUpdated').addEventListener('input', (e) => {
+        configData.updated_at = e.target.value;
+      });
+
+      const unitsBox = qs('#metaUnits');
+      unitsBox.innerHTML = '';
+      const units = configData.meta?.units || {};
+      Object.entries(units).forEach(([key, val]) => {
+        const row = document.createElement('div');
+        row.className = 'flex';
+        row.innerHTML = `
+          <label style="flex:1">变量<input value="${key}" class="unit-key" /></label>
+          <label style="flex:1">单位<input value="${val}" class="unit-val" /></label>
+          <button class="danger delete-unit" style="height:40px">删除</button>
+        `;
+        const keyInput = row.querySelector('.unit-key');
+        const valInput = row.querySelector('.unit-val');
+        keyInput.addEventListener('change', () => {
+          const newKey = keyInput.value.trim();
+          if (!newKey) {
+            keyInput.value = key;
+            return;
+          }
+          if (newKey !== key && units[newKey]) {
+            showStatus('失败', '单位名已存在');
+            keyInput.value = key;
+            return;
+          }
+          units[newKey] = units[key];
+          delete units[key];
+          renderMeta();
+        });
+        valInput.addEventListener('input', () => {
+          units[keyInput.value.trim() || key] = valInput.value;
+        });
+        row.querySelector('.delete-unit').addEventListener('click', () => {
+          delete units[key];
+          renderMeta();
+        });
+        unitsBox.appendChild(row);
+      });
+    }
+
+    async function saveConfig() {
+      if (!configData) return;
+      configData.updated_at = new Date().toISOString();
+      try {
+        await fetchJSON(API_BASE, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(configData)
+        });
+        showStatus('保存成功', '配置已写入服务器');
+        renderOverview();
+      } catch (err) {
+        showStatus('保存失败', err.message, 4500);
+      }
+    }
+
+    async function validateConfig() {
+      if (!configData) return;
+      try {
+        const resp = await fetchJSON('/api/wx/config/validate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(configData)
+        });
+        if (resp.ok) {
+          showStatus('校验成功', '配置通过校验');
+        }
+      } catch (err) {
+        showStatus('校验失败', err.message, 4500);
+      }
+    }
+
+    function bindEvents() {
+      qs('#reloadBtn').addEventListener('click', loadConfig);
+      qs('#validateBtn').addEventListener('click', validateConfig);
+      qs('#saveBtn').addEventListener('click', saveConfig);
+      qs('#loadVersions').addEventListener('click', loadVersions);
+      qs('#addThreshold').addEventListener('click', () => {
+        configData.thresholds = configData.thresholds || [];
+        configData.thresholds.push({label: '', level: '', min: 0});
+        renderCalibration();
+      });
+      qs('#addUnit').addEventListener('click', () => {
+        configData.meta = configData.meta || {};
+        configData.meta.units = configData.meta.units || {};
+        let idx = 1;
+        let key = `unit_${idx}`;
+        while (configData.meta.units[key]) {
+          idx += 1;
+          key = `unit_${idx}`;
+        }
+        configData.meta.units[key] = '';
+        renderMeta();
+      });
+      qs('#addCptEntry').addEventListener('click', () => {
+        const key = prompt('输入新的 CPT 键名');
+        if (!key) return;
+        if (configData.cpt?.[key]) {
+          showStatus('新增失败', 'CPT 键名已存在');
+          return;
+        }
+        configData.cpt = configData.cpt || {};
+        configData.cpt[key] = {};
+        renderCPT();
+      });
+      qs('#addRule').addEventListener('click', () => {
+        configData.rules = configData.rules || [];
+        configData.rules.push({
+          name: '新规则',
+          if: [{op: '', var: '', value: ''}],
+          then: {add_score: 0}
+        });
+        renderRules();
+      });
+      qs('#addLevel3Group').addEventListener('click', () => {
+        configData.weights = configData.weights || {};
+        configData.weights.level3 = configData.weights.level3 || {};
+        let idx = 1;
+        let key = `new_group_${idx}`;
+        while (configData.weights.level3[key]) {
+          idx += 1;
+          key = `new_group_${idx}`;
+        }
+        configData.weights.level3[key] = {};
+        renderLevel3();
+      });
+
+      qsa('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          qsa('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const id = tab.dataset.tab;
+          qsa('main section').forEach(sec => sec.classList.remove('active'));
+          qs(`#${id}`).classList.add('active');
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      bindEvents();
+      loadConfig();
+      loadVersions();
+    });
+  </script>
+</body>
+</html>
