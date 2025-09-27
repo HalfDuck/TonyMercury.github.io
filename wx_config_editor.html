@@ -58,19 +58,25 @@
       gap: 0.75rem;
       margin-left: auto;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     button, .tab {
       border: 1px solid rgba(148, 163, 184, 0.2);
       background: rgba(15, 23, 42, 0.6);
       color: var(--text);
-      border-radius: 9999px;
-      padding: 0.6rem 1.4rem;
+      border-radius: 12px;
+      padding: 0.55rem 1.25rem;
       font-size: 0.9rem;
       font-weight: 600;
       letter-spacing: 0.05em;
       cursor: pointer;
       transition: background 0.2s ease, border 0.2s ease, transform 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      line-height: 1.2;
     }
 
     button:hover, .tab:hover {
@@ -82,6 +88,7 @@
     button.primary {
       background: linear-gradient(135deg, rgba(56, 189, 248, 0.8), rgba(59, 130, 246, 0.8));
       border-color: rgba(56, 189, 248, 0.6);
+      color: #0f172a;
     }
 
     button.danger {
@@ -100,6 +107,7 @@
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .tab.active {
@@ -294,6 +302,45 @@
       color: var(--text-muted);
     }
 
+    .card form button {
+      align-self: flex-start;
+    }
+
+    .endpoint-config {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      min-width: 220px;
+    }
+
+    .endpoint-config input {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 10px;
+      padding: 0.45rem 0.75rem;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+
+    .endpoint-config input:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.6);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    header .actions button {
+      align-self: center;
+    }
+
+    header .actions .endpoint-config {
+      align-self: center;
+    }
+
     .status-bar {
       position: fixed;
       bottom: 1.5rem;
@@ -368,6 +415,13 @@
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
 
+    .query-grid {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      margin-bottom: 0.75rem;
+    }
+
     .flex {
       display: flex;
       gap: 0.75rem;
@@ -400,6 +454,10 @@
   <header>
     <h1>WX CONFIG • 暗色编辑面板</h1>
     <div class="actions">
+      <label class="endpoint-config">
+        API 地址
+        <input id="apiHostInput" placeholder="http://127.0.0.1:5000" />
+      </label>
       <button id="reloadBtn" class="muted-btn">重新加载</button>
       <button id="validateBtn" class="muted-btn">校验配置</button>
       <button id="saveBtn" class="primary">保存配置</button>
@@ -530,6 +588,66 @@
             <button type="submit" class="danger">删除该标注</button>
           </form>
           <button id="overrideResetBtn" class="danger" style="margin-top:0.5rem">一键清空全部标注</button>
+        </div>
+        <div class="card">
+          <h3 class="chip">标注统计</h3>
+          <button id="refreshOverrideStats" class="muted-btn">刷新统计</button>
+          <div id="overrideStatsBox" class="grid" style="gap:0.5rem"></div>
+        </div>
+        <div class="card">
+          <h3 class="chip">单条查询</h3>
+          <form id="overrideLookupForm" class="grid" style="gap:0.75rem">
+            <div class="flex" style="align-items:flex-end">
+              <label style="flex:1">
+                标识类型
+                <select id="overrideLookupType">
+                  <option value="mbPh">mbPh</option>
+                  <option value="mbnm">mbnm</option>
+                </select>
+              </label>
+              <label style="flex:2">
+                标识值
+                <input id="overrideLookupValue" placeholder="输入要查询的标识" />
+              </label>
+            </div>
+            <button type="submit" class="muted-btn">查询单条标注</button>
+          </form>
+          <div id="overrideLookupResult" class="grid" style="gap:0.5rem"></div>
+        </div>
+        <div class="card" style="grid-column:1 / -1">
+          <div class="section-header" style="padding:0">
+            <h3 class="chip">标注列表查询</h3>
+            <div class="flex" style="align-items:center;gap:0.75rem">
+              <span class="small" id="overrideQueryMeta"></span>
+              <div class="flex" style="gap:0.5rem">
+                <button form="overrideQueryForm" type="submit" class="muted-btn">执行查询</button>
+                <button id="overrideExportBtn" class="muted-btn" type="button">导出</button>
+              </div>
+            </div>
+          </div>
+          <form id="overrideQueryForm" class="query-grid">
+            <label>
+              威胁等级
+              <input id="overrideQueryLevel" placeholder="如 5" />
+            </label>
+            <label>
+              操作员
+              <input id="overrideQueryBy" placeholder="如 admin_A" />
+            </label>
+            <label>
+              搜索
+              <input id="overrideQueryTerm" placeholder="标识、理由或其他" />
+            </label>
+            <label>
+              Limit
+              <input id="overrideQueryLimit" type="number" min="1" step="1" />
+            </label>
+            <label>
+              Offset
+              <input id="overrideQueryOffset" type="number" min="0" step="1" />
+            </label>
+          </form>
+          <div id="overrideQueryResults" class="grid" style="gap:0.75rem"></div>
         </div>
         <div class="card" style="grid-column:1 / -1">
           <div class="section-header" style="padding:0">
@@ -665,7 +783,19 @@
   </template>
 
   <script>
-    const API_BASE = '/api/wx/config';
+    const API_PATHS = {
+      config: '/api/wx/config',
+      versions: '/api/wx/config/versions',
+      restore: '/api/wx/config/restore',
+      validate: '/api/wx/config/validate',
+      calculate: '/calculate',
+      overrides: '/api/overrides',
+      overrideStats: '/api/overrides/stats',
+      overrideExport: '/api/overrides/export'
+    };
+    const HOST_STORAGE_KEY = 'wx_config_editor_host';
+    const hostInput = document.getElementById('apiHostInput');
+    let lastHostValue = '';
     let configData = null;
     const searchFilters = {
       overview: '',
@@ -681,6 +811,19 @@
     let overrideLog = [];
     let overridePreviewData = [];
     let overrideTotalCount = 0;
+    let overrideListResults = [];
+    let overrideListMeta = {};
+    let overrideListLoading = false;
+    let overrideListError = '';
+    let overrideStatsData = null;
+    let overrideStatsLoading = false;
+    let overrideStatsError = '';
+    let overrideLookupData = null;
+    let overrideLookupLoading = false;
+    let overrideLookupError = '';
+    let overrideListInitialized = false;
+    const overrideQueryDefaults = Object.freeze({level: '', by: '', q: '', limit: 50, offset: 0});
+    let overrideQueryParams = {...overrideQueryDefaults};
     const MAX_OVERRIDE_LOG = 80;
 
     const qs = (sel, parent = document) => parent.querySelector(sel);
@@ -696,6 +839,95 @@
       const num = Number(value);
       return Number.isFinite(num) ? num : value;
     };
+
+    function normalizeHost(value) {
+      if (!value) return '';
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      return trimmed.replace(/\/+$/, '');
+    }
+
+    function getApiOrigin() {
+      return normalizeHost(hostInput ? hostInput.value : '');
+    }
+
+    function buildUrl(path) {
+      if (!path) {
+        return getApiOrigin();
+      }
+      if (/^https?:\/\//i.test(path)) {
+        return path;
+      }
+      const origin = getApiOrigin();
+      if (!origin) {
+        return path;
+      }
+      if (path.startsWith('/')) {
+        return `${origin}${path}`;
+      }
+      return `${origin}/${path}`;
+    }
+
+    function persistHost(value) {
+      try {
+        if (value) {
+          localStorage.setItem(HOST_STORAGE_KEY, value);
+        } else {
+          localStorage.removeItem(HOST_STORAGE_KEY);
+        }
+      } catch (err) {
+        console.warn('无法保存 API 地址到本地存储', err);
+      }
+    }
+
+    function applyHostFromStorage() {
+      if (!hostInput) return;
+      try {
+        const saved = localStorage.getItem(HOST_STORAGE_KEY);
+        if (saved) {
+          hostInput.value = saved;
+          lastHostValue = normalizeHost(saved);
+        }
+      } catch (err) {
+        console.warn('无法读取本地存储中的 API 地址', err);
+      }
+    }
+
+    function reloadFromHostChange() {
+      overrideListResults = [];
+      overrideListMeta = {};
+      overrideListError = '';
+      overrideListInitialized = false;
+      overrideStatsData = null;
+      overrideStatsError = '';
+      overrideStatsLoading = false;
+      overrideLookupData = null;
+      overrideLookupError = '';
+      overrideLookupLoading = false;
+      overrideTotalCount = 0;
+      renderOverrides();
+      loadConfig();
+      loadVersions();
+      refreshOverrideStats(true).catch((err) => console.error(err));
+      queryOverrideList({}, true).catch((err) => console.error(err));
+    }
+
+    if (hostInput) {
+      applyHostFromStorage();
+      const syncHost = () => {
+        const normalized = normalizeHost(hostInput.value);
+        hostInput.value = normalized;
+        if (normalized === lastHostValue) {
+          return;
+        }
+        lastHostValue = normalized;
+        persistHost(normalized);
+        showStatus('API 地址已更新', normalized || '已切换为当前页面域名');
+        reloadFromHostChange();
+      };
+      hostInput.addEventListener('change', syncHost);
+      hostInput.addEventListener('blur', syncHost);
+    }
 
     function attachSearch(selector, key, ...renderers) {
       const input = qs(selector);
@@ -799,11 +1031,21 @@
       }
     }
 
-    function fetchJSON(url, options) {
+    function fetchJSON(path, options) {
+      const url = buildUrl(path);
       return fetch(url, options).then(async (res) => {
-        const data = await res.json();
+        const text = await res.text();
+        let data = {};
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (err) {
+            console.warn('响应不是 JSON，返回原始文本', err);
+            data = {raw: text};
+          }
+        }
         if (!res.ok) {
-          throw new Error(data.error || '请求失败');
+          throw new Error(data.error || data.message || text || '请求失败');
         }
         return data;
       });
@@ -811,7 +1053,7 @@
 
     async function loadConfig() {
       try {
-        configData = await fetchJSON(API_BASE);
+        configData = await fetchJSON(API_PATHS.config);
         extractUiLevel3();
         renderAll();
         showStatus('加载完成', '配置已同步');
@@ -864,7 +1106,7 @@
 
     async function loadVersions() {
       try {
-        versionCache = await fetchJSON('/api/wx/config/versions');
+        versionCache = await fetchJSON(API_PATHS.versions);
         renderVersionList();
       } catch (err) {
         showStatus('错误', err.message, 4000);
@@ -903,7 +1145,7 @@
         item.querySelector('button').addEventListener('click', async () => {
           if (!confirm('确认恢复该版本? 当前配置将被覆盖。')) return;
           try {
-            await fetchJSON('/api/wx/config/restore', {
+            await fetchJSON(API_PATHS.restore, {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
               body: JSON.stringify({name: v.name})
@@ -1268,6 +1510,9 @@
     function renderOverrides() {
       renderOverrideHistory();
       renderOverridePreview();
+      renderOverrideStats();
+      renderOverrideLookup();
+      renderOverrideList();
     }
 
     function renderOverrideHistory() {
@@ -1366,9 +1611,326 @@
       }
     }
 
+    function renderOverrideStats() {
+      const box = qs('#overrideStatsBox');
+      if (!box) return;
+      box.innerHTML = '';
+      if (overrideStatsLoading) {
+        box.innerHTML = '<div class="small">统计加载中...</div>';
+        return;
+      }
+      if (overrideStatsError) {
+        box.innerHTML = `<div class="small">${overrideStatsError}</div>`;
+        return;
+      }
+      if (!overrideStatsData) {
+        box.innerHTML = '<div class="small">点击“刷新统计”获取最新数据。</div>';
+        return;
+      }
+      const entries = Object.entries(overrideStatsData);
+      if (!entries.length) {
+        box.innerHTML = '<div class="small">暂无统计数据</div>';
+        return;
+      }
+      entries.forEach(([key, value]) => {
+        const wrap = document.createElement('div');
+        wrap.style.display = 'grid';
+        wrap.style.gap = '0.35rem';
+        const label = document.createElement('div');
+        label.className = 'chip';
+        label.textContent = key;
+        wrap.appendChild(label);
+        if (value && typeof value === 'object') {
+          const pre = document.createElement('pre');
+          pre.style.margin = '0';
+          pre.style.background = 'rgba(15, 23, 42, 0.55)';
+          pre.style.padding = '0.6rem 0.75rem';
+          pre.style.borderRadius = '10px';
+          pre.style.whiteSpace = 'pre-wrap';
+          pre.style.fontSize = '0.8rem';
+          pre.textContent = JSON.stringify(value, null, 2);
+          wrap.appendChild(pre);
+        } else {
+          const text = document.createElement('div');
+          text.style.fontWeight = '600';
+          text.textContent = value ?? '—';
+          wrap.appendChild(text);
+        }
+        box.appendChild(wrap);
+      });
+    }
+
+    function renderOverrideLookup() {
+      const box = qs('#overrideLookupResult');
+      if (!box) return;
+      box.innerHTML = '';
+      if (overrideLookupLoading) {
+        box.innerHTML = '<div class="small">查询中...</div>';
+        return;
+      }
+      if (overrideLookupError) {
+        box.innerHTML = `<div class="small">${overrideLookupError}</div>`;
+        return;
+      }
+      if (!overrideLookupData) {
+        box.innerHTML = '<div class="small">提交查询以查看单条标注详情。</div>';
+        return;
+      }
+      const card = document.createElement('div');
+      card.className = 'group-card';
+      const identifier = overrideLookupData.mbPh ?? overrideLookupData.mbnm ?? overrideLookupData.id ?? '标注';
+      const level = overrideLookupData.threat_level ?? overrideLookupData.level ?? '—';
+      const actor = overrideLookupData.by ?? overrideLookupData.operator ?? '—';
+      const reason = overrideLookupData.reason ?? '';
+      const ts = overrideLookupData.ts ?? overrideLookupData.updated_at ?? overrideLookupData.created_at;
+      card.innerHTML = `
+        <div class="flex" style="justify-content:space-between;align-items:center">
+          <span class="chip">${identifier}</span>
+          <span class="small">等级 ${level}</span>
+        </div>
+      `;
+      const meta = document.createElement('div');
+      meta.className = 'small';
+      meta.textContent = `操作员: ${actor}${ts ? ` · 时间: ${new Date(ts).toLocaleString()}` : ''}`;
+      card.appendChild(meta);
+      if (reason) {
+        const reasonEl = document.createElement('div');
+        reasonEl.className = 'small';
+        reasonEl.textContent = `理由: ${reason}`;
+        card.appendChild(reasonEl);
+      }
+      const ids = [];
+      if (overrideLookupData.mbPh !== undefined) ids.push(`mbPh: ${overrideLookupData.mbPh}`);
+      if (overrideLookupData.mbnm) ids.push(`mbnm: ${overrideLookupData.mbnm}`);
+      if (ids.length) {
+        const idRow = document.createElement('div');
+        idRow.className = 'small';
+        idRow.textContent = ids.join(' · ');
+        card.appendChild(idRow);
+      }
+      const pre = document.createElement('pre');
+      pre.style.margin = '0';
+      pre.style.background = 'rgba(15, 23, 42, 0.55)';
+      pre.style.padding = '0.6rem 0.75rem';
+      pre.style.borderRadius = '10px';
+      pre.style.whiteSpace = 'pre-wrap';
+      pre.style.fontSize = '0.8rem';
+      pre.textContent = JSON.stringify(overrideLookupData, null, 2);
+      card.appendChild(pre);
+      box.appendChild(card);
+    }
+
+    function syncOverrideQueryForm() {
+      const levelInput = qs('#overrideQueryLevel');
+      const byInput = qs('#overrideQueryBy');
+      const termInput = qs('#overrideQueryTerm');
+      const limitInput = qs('#overrideQueryLimit');
+      const offsetInput = qs('#overrideQueryOffset');
+      if (levelInput) levelInput.value = overrideQueryParams.level ?? '';
+      if (byInput) byInput.value = overrideQueryParams.by ?? '';
+      if (termInput) termInput.value = overrideQueryParams.q ?? '';
+      if (limitInput) limitInput.value = overrideQueryParams.limit ?? '';
+      if (offsetInput) offsetInput.value = overrideQueryParams.offset ?? '';
+    }
+
+    function renderOverrideList() {
+      const box = qs('#overrideQueryResults');
+      const meta = qs('#overrideQueryMeta');
+      syncOverrideQueryForm();
+      if (meta) {
+        const metaParts = [];
+        if (typeof overrideListMeta.total === 'number') metaParts.push(`总数 ${overrideListMeta.total}`);
+        if (typeof overrideListMeta.offset === 'number') metaParts.push(`偏移 ${overrideListMeta.offset}`);
+        if (typeof overrideListMeta.limit === 'number') metaParts.push(`每页 ${overrideListMeta.limit}`);
+        meta.textContent = metaParts.join(' · ');
+      }
+      if (!box) return;
+      box.innerHTML = '';
+      if (overrideListLoading) {
+        box.innerHTML = '<div class="small">查询中...</div>';
+        return;
+      }
+      if (overrideListError) {
+        box.innerHTML = `<div class="small">${overrideListError}</div>`;
+        return;
+      }
+      const term = searchFilters.overrides;
+      const filtered = term
+        ? overrideListResults.filter((item) => matchesTerm(term, item.mbPh, item.mbnm, item.by, item.reason, item.threat_level, JSON.stringify(item)))
+        : overrideListResults;
+      if (!filtered.length) {
+        box.innerHTML = '<div class="small">暂无标注数据</div>';
+        return;
+      }
+      filtered.forEach((item) => {
+        const identifier = item.mbPh ?? item.mbnm ?? item.id ?? '标注';
+        const level = item.threat_level ?? item.level ?? '—';
+        const actor = item.by ?? item.operator ?? '—';
+        const reason = item.reason ?? '';
+        const ts = item.ts ?? item.updated_at ?? item.created_at;
+        const card = document.createElement('div');
+        card.className = 'group-card';
+        card.innerHTML = `
+          <div class="flex" style="justify-content:space-between;align-items:center">
+            <span class="chip">${identifier}</span>
+            <span class="small">等级 ${level}</span>
+          </div>
+        `;
+        const metaLine = document.createElement('div');
+        metaLine.className = 'small';
+        metaLine.textContent = `操作员: ${actor}${ts ? ` · 时间: ${new Date(ts).toLocaleString()}` : ''}`;
+        card.appendChild(metaLine);
+        if (reason) {
+          const reasonEl = document.createElement('div');
+          reasonEl.className = 'small';
+          reasonEl.textContent = `理由: ${reason}`;
+          card.appendChild(reasonEl);
+        }
+        const ids = [];
+        if (item.mbPh !== undefined) ids.push(`mbPh: ${item.mbPh}`);
+        if (item.mbnm) ids.push(`mbnm: ${item.mbnm}`);
+        if (ids.length) {
+          const idRow = document.createElement('div');
+          idRow.className = 'small';
+          idRow.textContent = ids.join(' · ');
+          card.appendChild(idRow);
+        }
+        const pre = document.createElement('pre');
+        pre.style.margin = '0';
+        pre.style.background = 'rgba(15, 23, 42, 0.55)';
+        pre.style.padding = '0.6rem 0.75rem';
+        pre.style.borderRadius = '10px';
+        pre.style.whiteSpace = 'pre-wrap';
+        pre.style.fontSize = '0.8rem';
+        pre.textContent = JSON.stringify(item, null, 2);
+        card.appendChild(pre);
+        box.appendChild(card);
+      });
+    }
+
+    async function refreshOverrideStats(silent = false) {
+      overrideStatsLoading = true;
+      overrideStatsError = '';
+      renderOverrideStats();
+      try {
+        const data = await fetchJSON(API_PATHS.overrideStats);
+        overrideStatsData = data;
+        overrideStatsLoading = false;
+        if (typeof data.total_overrides === 'number') {
+          overrideTotalCount = data.total_overrides;
+        } else if (typeof data.total === 'number') {
+          overrideTotalCount = data.total;
+        }
+        renderOverrideStats();
+        renderOverrideHistory();
+        if (!silent) {
+          showStatus('统计已更新', '威胁标注统计获取成功');
+        }
+        return data;
+      } catch (err) {
+        overrideStatsLoading = false;
+        overrideStatsData = null;
+        overrideStatsError = err.message;
+        renderOverrideStats();
+        if (!silent) {
+          showStatus('统计获取失败', err.message, 4500);
+        }
+        throw err;
+      }
+    }
+
+    async function lookupOverrideItem(type, value) {
+      overrideLookupLoading = true;
+      overrideLookupError = '';
+      overrideLookupData = null;
+      renderOverrideLookup();
+      try {
+        const path = `${API_PATHS.overrides}/${encodeURIComponent(type)}/${encodeURIComponent(value)}`;
+        const data = await fetchJSON(path);
+        overrideLookupLoading = false;
+        overrideLookupData = data;
+        renderOverrideLookup();
+        showStatus('查询成功', `${type} ${value} 的标注已获取`);
+        return data;
+      } catch (err) {
+        overrideLookupLoading = false;
+        overrideLookupError = err.message;
+        overrideLookupData = null;
+        renderOverrideLookup();
+        showStatus('查询失败', err.message, 4500);
+        throw err;
+      }
+    }
+
+    async function queryOverrideList(params = {}, silent = false) {
+      overrideListLoading = true;
+      overrideListError = '';
+      overrideListResults = [];
+      renderOverrideList();
+      const nextParams = {...overrideQueryParams, ...params};
+      overrideQueryParams = nextParams;
+      const search = new URLSearchParams();
+      if (nextParams.level) search.set('level', nextParams.level);
+      if (nextParams.by) search.set('by', nextParams.by);
+      if (nextParams.q) search.set('q', nextParams.q);
+      if (nextParams.limit) search.set('limit', nextParams.limit);
+      if (typeof nextParams.offset === 'number' || nextParams.offset) search.set('offset', nextParams.offset);
+      const qsStr = search.toString();
+      const path = qsStr ? `${API_PATHS.overrides}?${qsStr}` : API_PATHS.overrides;
+      try {
+        const data = await fetchJSON(path);
+        const items = Array.isArray(data)
+          ? data
+          : Array.isArray(data.items)
+            ? data.items
+            : Array.isArray(data.data)
+              ? data.data
+              : Array.isArray(data.results)
+                ? data.results
+                : [];
+        overrideListResults = items;
+        overrideQueryParams = {
+          level: nextParams.level || '',
+          by: nextParams.by || '',
+          q: nextParams.q || '',
+          limit: nextParams.limit === '' ? '' : (Number.isFinite(Number(nextParams.limit)) ? Number(nextParams.limit) : nextParams.limit),
+          offset: nextParams.offset === '' ? '' : (Number.isFinite(Number(nextParams.offset)) ? Number(nextParams.offset) : nextParams.offset)
+        };
+        const totalValue = data.total ?? data.total_overrides ?? data.count ?? items.length;
+        const limitValue = data.limit ?? nextParams.limit ?? items.length;
+        const offsetValue = data.offset ?? nextParams.offset ?? 0;
+        if (Number.isFinite(Number(totalValue))) {
+          overrideTotalCount = Number(totalValue);
+        }
+        overrideListMeta = {
+          total: Number.isFinite(Number(totalValue)) ? Number(totalValue) : totalValue,
+          limit: Number.isFinite(Number(limitValue)) ? Number(limitValue) : limitValue,
+          offset: Number.isFinite(Number(offsetValue)) ? Number(offsetValue) : offsetValue
+        };
+        renderOverrideHistory();
+        overrideListInitialized = true;
+        overrideListLoading = false;
+        renderOverrideList();
+        if (!silent) {
+          showStatus('查询完成', `共返回 ${items.length} 条标注`);
+        }
+        return data;
+      } catch (err) {
+        overrideListLoading = false;
+        overrideListResults = [];
+        overrideListMeta = {};
+        overrideListError = err.message;
+        renderOverrideList();
+        if (!silent) {
+          showStatus('查询失败', err.message, 4500);
+        }
+        throw err;
+      }
+    }
+
     async function sendOverrideRequest(payload, successMessage, logType = 'info') {
       try {
-        const resp = await fetchJSON('/calculate', {
+        const resp = await fetchJSON(API_PATHS.calculate, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(payload)
@@ -1387,6 +1949,10 @@
           overrideTotalCount = resp.total_overrides;
         }
         renderOverrides();
+        refreshOverrideStats(true).catch((err) => console.error(err));
+        if (overrideListInitialized) {
+          queryOverrideList({}, true).catch((err) => console.error(err));
+        }
         showStatus('操作成功', successMessage || '请求已完成');
         return resp;
       } catch (err) {
@@ -1617,7 +2183,7 @@
       try {
         const payload = buildServerPayload();
         payload.updated_at = configData.updated_at;
-        await fetchJSON(API_BASE, {
+        await fetchJSON(API_PATHS.config, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(payload)
@@ -1633,7 +2199,7 @@
       if (!configData) return;
       try {
         const payload = buildServerPayload();
-        const resp = await fetchJSON('/api/wx/config/validate', {
+        const resp = await fetchJSON(API_PATHS.validate, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(payload)
@@ -1711,6 +2277,8 @@
         renderWeights();
         showStatus('新增完成', `指标组 ${key} 已加入 ${defaultParent}`);
       });
+
+      syncOverrideQueryForm();
 
       const singleForm = qs('#overrideSingleForm');
       if (singleForm) {
@@ -1828,6 +2396,73 @@
         });
       }
 
+      const statsBtn = qs('#refreshOverrideStats');
+      if (statsBtn) {
+        statsBtn.addEventListener('click', () => {
+          refreshOverrideStats().catch((err) => console.error(err));
+        });
+      }
+
+      const lookupForm = qs('#overrideLookupForm');
+      if (lookupForm) {
+        lookupForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const type = qs('#overrideLookupType').value;
+          const raw = qs('#overrideLookupValue').value.trim();
+          if (!raw) {
+            showStatus('校验失败', '请填写要查询的标识');
+            return;
+          }
+          const value = type === 'mbPh' ? maybeNumber(raw) : raw;
+          try {
+            await lookupOverrideItem(type, value);
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      }
+
+      const queryForm = qs('#overrideQueryForm');
+      if (queryForm) {
+        queryForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const level = qs('#overrideQueryLevel').value.trim();
+          const by = qs('#overrideQueryBy').value.trim();
+          const term = qs('#overrideQueryTerm').value.trim();
+          const limitRaw = qs('#overrideQueryLimit').value.trim();
+          const offsetRaw = qs('#overrideQueryOffset').value.trim();
+          const limitNum = Number(limitRaw);
+          const offsetNum = Number(offsetRaw);
+          const params = {
+            level,
+            by,
+            q: term,
+            limit: limitRaw ? (Number.isFinite(limitNum) ? Math.max(1, limitNum) : '') : '',
+            offset: offsetRaw ? (Number.isFinite(offsetNum) ? Math.max(0, offsetNum) : '') : ''
+          };
+          try {
+            await queryOverrideList(params);
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      }
+
+      const exportBtn = qs('#overrideExportBtn');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+          const search = new URLSearchParams();
+          if (overrideQueryParams.level) search.set('level', overrideQueryParams.level);
+          if (overrideQueryParams.by) search.set('by', overrideQueryParams.by);
+          if (overrideQueryParams.q) search.set('q', overrideQueryParams.q);
+          if (overrideQueryParams.limit) search.set('limit', overrideQueryParams.limit);
+          if (overrideQueryParams.offset || overrideQueryParams.offset === 0) search.set('offset', overrideQueryParams.offset);
+          const qsStr = search.toString();
+          const url = buildUrl(qsStr ? `${API_PATHS.overrideExport}?${qsStr}` : API_PATHS.overrideExport);
+          window.open(url, '_blank');
+        });
+      }
+
       const scrollTop = qs('#scrollTopBtn');
       if (scrollTop) {
         scrollTop.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
@@ -1861,6 +2496,8 @@
       bindEvents();
       loadConfig();
       loadVersions();
+      refreshOverrideStats(true).catch((err) => console.error(err));
+      queryOverrideList({}, true).catch((err) => console.error(err));
     });
   </script>
 </body>
