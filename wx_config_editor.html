@@ -108,6 +108,29 @@
       color: #0f172a;
     }
 
+    .search-input {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 9999px;
+      padding: 0.45rem 1.1rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      min-width: 220px;
+      transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .search-input:focus {
+      background: rgba(15, 23, 42, 0.85);
+      border-color: rgba(56, 189, 248, 0.6);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+      outline: none;
+    }
+
     section {
       display: none;
       background: rgba(15, 23, 42, 0.6);
@@ -308,6 +331,20 @@
       color: var(--text);
     }
 
+    .scroll-tools {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 7.5rem;
+      display: grid;
+      gap: 0.6rem;
+      z-index: 18;
+    }
+
+    .scroll-tools button {
+      border-radius: 12px;
+      padding: 0.55rem 1.1rem;
+    }
+
     .rule-card {
       display: grid;
       gap: 0.75rem;
@@ -375,12 +412,17 @@
       <button class="tab" data-tab="level3">三级指标</button>
       <button class="tab" data-tab="cpt">条件概率 (CPT)</button>
       <button class="tab" data-tab="rules">规则</button>
+      <button class="tab" data-tab="overrides">威胁等级标注</button>
       <button class="tab" data-tab="weights">权重</button>
       <button class="tab" data-tab="calibration">校准/阈值</button>
       <button class="tab" data-tab="meta">元信息</button>
     </div>
 
     <section id="overview" class="active">
+      <div class="section-header">
+        <h2>配置概览</h2>
+        <input type="search" id="overviewSearch" class="search-input" placeholder="搜索概览或快照..." />
+      </div>
       <div class="grid two-col">
         <div class="card">
           <h2>配置摘要</h2>
@@ -402,7 +444,10 @@
     <section id="level3">
       <div class="section-header">
         <h2>三级指标权重</h2>
-        <button id="addLevel3Group" class="muted-btn">新增指标组</button>
+        <div class="flex" style="align-items:center;gap:0.75rem">
+          <input type="search" id="level3Search" class="search-input" placeholder="搜索指标组或指标..." />
+          <button id="addLevel3Group" class="muted-btn">新增指标组</button>
+        </div>
       </div>
       <div id="level3Container" class="group-list"></div>
     </section>
@@ -410,7 +455,10 @@
     <section id="cpt">
       <div class="section-header">
         <h2>条件概率 (CPT)</h2>
-        <button id="addCptEntry" class="muted-btn">新增 CPT 条目</button>
+        <div class="flex" style="align-items:center;gap:0.75rem">
+          <input type="search" id="cptSearch" class="search-input" placeholder="搜索 CPT 键或内容..." />
+          <button id="addCptEntry" class="muted-btn">新增 CPT 条目</button>
+        </div>
       </div>
       <div id="cptContainer" class="grid" style="gap:1rem"></div>
     </section>
@@ -418,13 +466,97 @@
     <section id="rules">
       <div class="section-header">
         <h2>规则编辑</h2>
-        <button id="addRule" class="muted-btn">新增规则</button>
+        <div class="flex" style="align-items:center;gap:0.75rem">
+          <input type="search" id="rulesSearch" class="search-input" placeholder="搜索规则名称或条件..." />
+          <button id="addRule" class="muted-btn">新增规则</button>
+        </div>
       </div>
       <div id="rulesContainer" class="grid" style="gap:1rem"></div>
     </section>
 
+    <section id="overrides">
+      <div class="section-header">
+        <h2>威胁等级标注</h2>
+        <input type="search" id="overrideSearch" class="search-input" placeholder="搜索标注或威胁结果..." />
+      </div>
+      <div class="grid two-col">
+        <div class="card">
+          <h3 class="chip">单条标注</h3>
+          <form id="overrideSingleForm" class="grid" style="gap:0.75rem">
+            <div class="flex" style="align-items:flex-end">
+              <label style="flex:1">
+                标识类型
+                <select id="overrideIdType">
+                  <option value="mbPh">mbPh</option>
+                  <option value="mbnm">mbnm</option>
+                </select>
+              </label>
+              <label style="flex:2">
+                标识值
+                <input id="overrideIdValue" required placeholder="如 3250033 或 M123" />
+              </label>
+            </div>
+            <div class="flex">
+              <label style="flex:1">威胁等级<input id="overrideThreatLevel" required placeholder="如 5" /></label>
+              <label style="flex:1">操作员<input id="overrideBy" placeholder="如 admin_A" /></label>
+            </div>
+            <label>理由<textarea id="overrideReason" placeholder="填写标注原因"></textarea></label>
+            <button type="submit" class="primary">提交单条标注</button>
+          </form>
+        </div>
+        <div class="card">
+          <h3 class="chip">批量写入</h3>
+          <form id="overrideBatchForm" class="grid" style="gap:0.75rem">
+            <label>JSON 数组<textarea id="overrideBatchInput" placeholder='[{"mbPh":111,"threat_level":"4"}]'></textarea></label>
+            <button type="submit" class="muted-btn">提交批量标注</button>
+          </form>
+        </div>
+        <div class="card">
+          <h3 class="chip">删除 / 清空</h3>
+          <form id="overrideDeleteForm" class="grid" style="gap:0.75rem">
+            <div class="flex" style="align-items:flex-end">
+              <label style="flex:1">
+                标识类型
+                <select id="overrideDeleteType">
+                  <option value="mbPh">mbPh</option>
+                  <option value="mbnm">mbnm</option>
+                </select>
+              </label>
+              <label style="flex:2">
+                标识值
+                <input id="overrideDeleteValue" placeholder="填写要删除的标注目标" />
+              </label>
+            </div>
+            <button type="submit" class="danger">删除该标注</button>
+          </form>
+          <button id="overrideResetBtn" class="danger" style="margin-top:0.5rem">一键清空全部标注</button>
+        </div>
+        <div class="card" style="grid-column:1 / -1">
+          <div class="section-header" style="padding:0">
+            <h3 class="chip">/calculate 响应记录</h3>
+            <div class="flex" style="align-items:center;gap:0.75rem">
+              <span class="small" id="overrideTotalLabel">已知标注总数：0</span>
+              <button id="clearOverrideHistory" class="muted-btn">清空本地记录</button>
+            </div>
+          </div>
+          <div id="overrideHistoryList" class="grid" style="gap:0.75rem"></div>
+        </div>
+        <div class="card" style="grid-column:1 / -1">
+          <div class="section-header" style="padding:0">
+            <h3 class="chip">威胁结果检查</h3>
+            <button id="parseOverridePreview" class="muted-btn">解析结果</button>
+          </div>
+          <textarea id="overridePreviewInput" placeholder="粘贴 /calculate 返回的威胁结果 JSON"></textarea>
+          <div id="overridePreviewOutput" class="grid" style="gap:0.75rem"></div>
+        </div>
+      </div>
+    </section>
+
     <section id="weights">
-      <h2>权重 • Level1 / Level2</h2>
+      <div class="section-header">
+        <h2>权重 • Level1 / Level2</h2>
+        <input type="search" id="weightsSearch" class="search-input" placeholder="搜索 Level1 或 Level2 权重..." />
+      </div>
       <div class="grid two-col">
         <div class="card">
           <h3 class="chip">Level 1</h3>
@@ -438,7 +570,10 @@
     </section>
 
     <section id="calibration">
-      <h2>校准 & 阈值</h2>
+      <div class="section-header">
+        <h2>校准 & 阈值</h2>
+        <input type="search" id="calibrationSearch" class="search-input" placeholder="搜索校准键或阈值..." />
+      </div>
       <div class="grid two-col">
         <div class="card">
           <h3 class="chip">Calibration</h3>
@@ -453,10 +588,14 @@
     </section>
 
     <section id="meta">
-      <h2>元信息</h2>
+      <div class="section-header">
+        <h2>元信息</h2>
+        <input type="search" id="metaSearch" class="search-input" placeholder="搜索备注或单位..." />
+      </div>
       <div class="grid two-col">
         <div class="card">
           <h3 class="chip">Meta</h3>
+          <div id="metaSearchHint" class="small"></div>
           <label>
             Notes
             <textarea id="metaNotes"></textarea>
@@ -478,6 +617,11 @@
       </div>
     </section>
   </main>
+
+  <div class="scroll-tools">
+    <button id="scrollTopBtn" class="muted-btn">↑ 回到顶部</button>
+    <button id="scrollBottomBtn" class="muted-btn">↓ 回到底部</button>
+  </div>
 
   <div id="statusBar" class="status-bar">
     <span class="status-title" id="statusTitle"></span>
@@ -523,9 +667,46 @@
   <script>
     const API_BASE = '/api/wx/config';
     let configData = null;
+    const searchFilters = {
+      overview: '',
+      level3: '',
+      cpt: '',
+      rules: '',
+      overrides: '',
+      weights: '',
+      calibration: '',
+      meta: ''
+    };
+    let versionCache = [];
+    let overrideLog = [];
+    let overridePreviewData = [];
+    let overrideTotalCount = 0;
+    const MAX_OVERRIDE_LOG = 80;
 
     const qs = (sel, parent = document) => parent.querySelector(sel);
     const qsa = (sel, parent = document) => Array.from(parent.querySelectorAll(sel));
+
+    const toLower = (value) => (value ?? '').toString().toLowerCase();
+    const matchesTerm = (term, ...values) => {
+      if (!term) return true;
+      return values.some((val) => toLower(val).includes(term));
+    };
+    const maybeNumber = (value) => {
+      if (value === null || value === undefined || value === '') return value;
+      const num = Number(value);
+      return Number.isFinite(num) ? num : value;
+    };
+
+    function attachSearch(selector, key, ...renderers) {
+      const input = qs(selector);
+      if (!input) return;
+      const update = () => {
+        searchFilters[key] = toLower(input.value.trim());
+        renderers.forEach((fn) => fn());
+      };
+      input.addEventListener('input', update);
+      update();
+    }
 
     function extractUiLevel3() {
       const metaGroups = configData?.meta?.ui_level3_groups;
@@ -646,12 +827,14 @@
       renderLevel3();
       renderCPT();
       renderRules();
+      renderOverrides();
       renderWeights();
       renderCalibration();
       renderMeta();
     }
 
     function renderOverview() {
+      if (!configData) return;
       const summary = qs('#overviewSummary');
       summary.innerHTML = '';
       const items = [
@@ -662,58 +845,81 @@
         ['CPT 项目', Object.keys(configData.cpt || {}).length],
         ['三级指标组', Object.keys(configData.weights?.level3 || {}).length]
       ];
-      for (const [label, value] of items) {
-        const row = document.createElement('div');
-        row.innerHTML = `<span class="chip">${label}</span><div style="font-size:1rem;font-weight:600">${value ?? '—'}</div>`;
-        row.style.display = 'flex';
-        row.style.alignItems = 'center';
-        row.style.justifyContent = 'space-between';
-        summary.appendChild(row);
+      const term = searchFilters.overview;
+      const filtered = term ? items.filter(([label, value]) => matchesTerm(term, label, value)) : items;
+      if (!filtered.length) {
+        summary.innerHTML = '<div class="small">未找到匹配的概览信息</div>';
+      } else {
+        for (const [label, value] of filtered) {
+          const row = document.createElement('div');
+          row.innerHTML = `<span class="chip">${label}</span><div style="font-size:1rem;font-weight:600">${value ?? '—'}</div>`;
+          row.style.display = 'flex';
+          row.style.alignItems = 'center';
+          row.style.justifyContent = 'space-between';
+          summary.appendChild(row);
+        }
       }
+      renderVersionList();
     }
 
     async function loadVersions() {
       try {
-        const data = await fetchJSON('/api/wx/config/versions');
-        const box = qs('#versionList');
-        box.innerHTML = '';
-        if (!data.length) {
-          box.innerHTML = '<div class="small">暂无快照</div>';
-          return;
-        }
-        data.forEach(v => {
-          const item = document.createElement('div');
-          item.className = 'card';
-          item.style.padding = '0.75rem';
-          item.style.gap = '0.35rem';
-          item.innerHTML = `
-            <div style="font-weight:600">${v.name}</div>
-            <div class="small">${new Date(v.modified).toLocaleString()}</div>
-            <div class="small">${(v.size / 1024).toFixed(2)} KB</div>
-            <button class="muted-btn" style="padding:0.35rem 0.8rem">恢复此版本</button>
-          `;
-          item.querySelector('button').addEventListener('click', async () => {
-            if (!confirm('确认恢复该版本? 当前配置将被覆盖。')) return;
-            try {
-              await fetchJSON('/api/wx/config/restore', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name: v.name})
-              });
-              showStatus('恢复完成', `已恢复版本 ${v.name}`);
-              loadConfig();
-            } catch (err) {
-              showStatus('错误', err.message, 4000);
-            }
-          });
-          box.appendChild(item);
-        });
+        versionCache = await fetchJSON('/api/wx/config/versions');
+        renderVersionList();
       } catch (err) {
         showStatus('错误', err.message, 4000);
+        versionCache = [];
+        renderVersionList();
       }
     }
 
+    function renderVersionList() {
+      const box = qs('#versionList');
+      if (!box) return;
+      box.innerHTML = '';
+      if (!versionCache.length) {
+        box.innerHTML = '<div class="small">暂无快照</div>';
+        return;
+      }
+      const term = searchFilters.overview;
+      const filtered = term
+        ? versionCache.filter((v) => matchesTerm(term, v.name, v.modified, v.size))
+        : versionCache;
+      if (!filtered.length) {
+        box.innerHTML = '<div class="small">未找到匹配的版本快照</div>';
+        return;
+      }
+      filtered.forEach((v) => {
+        const item = document.createElement('div');
+        item.className = 'card';
+        item.style.padding = '0.75rem';
+        item.style.gap = '0.35rem';
+        item.innerHTML = `
+          <div style="font-weight:600">${v.name}</div>
+          <div class="small">${new Date(v.modified).toLocaleString()}</div>
+          <div class="small">${(v.size / 1024).toFixed(2)} KB</div>
+          <button class="muted-btn" style="padding:0.35rem 0.8rem">恢复此版本</button>
+        `;
+        item.querySelector('button').addEventListener('click', async () => {
+          if (!confirm('确认恢复该版本? 当前配置将被覆盖。')) return;
+          try {
+            await fetchJSON('/api/wx/config/restore', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({name: v.name})
+            });
+            showStatus('恢复完成', `已恢复版本 ${v.name}`);
+            loadConfig();
+          } catch (err) {
+            showStatus('错误', err.message, 4000);
+          }
+        });
+        box.appendChild(item);
+      });
+    }
+
     function renderLevel3() {
+      if (!configData) return;
       const container = qs('#level3Container');
       container.innerHTML = '';
       configData.weights = configData.weights || {};
@@ -732,7 +938,19 @@
       const template = qs('#level3GroupTemplate');
       const metricTemplate = qs('#metricRowTemplate');
 
-      Object.entries(level3).forEach(([groupKey, metrics]) => {
+      const term = searchFilters.level3;
+      const entries = Object.entries(level3).filter(([groupKey, metrics]) => {
+        if (!term) return true;
+        if (matchesTerm(term, groupKey)) return true;
+        return Object.entries(metrics || {}).some(([metricKey, metricVal]) => matchesTerm(term, metricKey, metricVal));
+      });
+
+      if (!entries.length) {
+        container.innerHTML = '<div class="small">未找到匹配的指标组</div>';
+        return;
+      }
+
+      entries.forEach(([groupKey, metrics]) => {
         const node = template.content.firstElementChild.cloneNode(true);
         const nameInput = node.querySelector('.group-name');
         nameInput.value = groupKey;
@@ -895,10 +1113,17 @@
     }
 
     function renderCPT() {
+      if (!configData) return;
       const container = qs('#cptContainer');
       container.innerHTML = '';
       const cpt = configData.cpt || {};
-      Object.entries(cpt).forEach(([key, value]) => {
+      const term = searchFilters.cpt;
+      const entries = Object.entries(cpt).filter(([key, value]) => matchesTerm(term, key, JSON.stringify(value)));
+      if (!entries.length) {
+        container.innerHTML = '<div class="small">未找到匹配的 CPT 条目</div>';
+        return;
+      }
+      entries.forEach(([key, value]) => {
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -931,10 +1156,17 @@
     }
 
     function renderRules() {
+      if (!configData) return;
       const container = qs('#rulesContainer');
       container.innerHTML = '';
       const rules = configData.rules || [];
+      const term = searchFilters.rules;
+      let hasAny = false;
       rules.forEach((rule, idx) => {
+        if (term && !matchesTerm(term, rule.name, JSON.stringify(rule.then), JSON.stringify(rule.if))) {
+          return;
+        }
+        hasAny = true;
         const card = document.createElement('div');
         card.className = 'rule-card';
         card.innerHTML = `
@@ -1016,16 +1248,167 @@
 
         container.appendChild(card);
       });
+      if (!hasAny) {
+        container.innerHTML = '<div class="small">未找到匹配的规则</div>';
+      }
+    }
+
+    function pushOverrideLogEntry(type, data = null, message = '', ts = null) {
+      overrideLog.unshift({
+        type,
+        data,
+        message,
+        ts: ts || new Date().toISOString()
+      });
+      if (overrideLog.length > MAX_OVERRIDE_LOG) {
+        overrideLog.length = MAX_OVERRIDE_LOG;
+      }
+    }
+
+    function renderOverrides() {
+      renderOverrideHistory();
+      renderOverridePreview();
+    }
+
+    function renderOverrideHistory() {
+      const list = qs('#overrideHistoryList');
+      if (!list) return;
+      list.innerHTML = '';
+      const totalLabel = qs('#overrideTotalLabel');
+      if (totalLabel) {
+        totalLabel.textContent = `已知标注总数：${overrideTotalCount}`;
+      }
+      const term = searchFilters.overrides;
+      const filtered = overrideLog.filter((entry) => matchesTerm(term, entry.type, entry.message, JSON.stringify(entry.data)));
+      if (!filtered.length) {
+        list.innerHTML = '<div class="small">暂无匹配的标注记录</div>';
+        return;
+      }
+      const typeNames = {
+        save: '写入',
+        delete: '删除',
+        reset: '清空',
+        batch: '批量',
+        info: '通知'
+      };
+      filtered.forEach((entry) => {
+        const card = document.createElement('div');
+        card.className = 'group-card';
+        card.innerHTML = `
+          <div class="flex" style="justify-content:space-between;align-items:center">
+            <span class="chip">${typeNames[entry.type] || entry.type}</span>
+            <span class="small">${new Date(entry.ts).toLocaleString()}</span>
+          </div>
+        `;
+        if (entry.message) {
+          const msg = document.createElement('div');
+          msg.className = 'small';
+          msg.textContent = entry.message;
+          card.appendChild(msg);
+        }
+        if (entry.data) {
+          const pre = document.createElement('pre');
+          pre.style.margin = '0';
+          pre.style.background = 'rgba(15, 23, 42, 0.55)';
+          pre.style.padding = '0.75rem';
+          pre.style.borderRadius = '12px';
+          pre.style.fontSize = '0.8rem';
+          pre.style.whiteSpace = 'pre-wrap';
+          pre.textContent = JSON.stringify(entry.data, null, 2);
+          card.appendChild(pre);
+        }
+        list.appendChild(card);
+      });
+    }
+
+    function renderOverridePreview() {
+      const box = qs('#overridePreviewOutput');
+      if (!box) return;
+      box.innerHTML = '';
+      if (!overridePreviewData.length) {
+        box.innerHTML = '<div class="small">粘贴 /calculate 返回的结果并点击“解析结果”。</div>';
+        return;
+      }
+      const term = searchFilters.overrides;
+      let hasAny = false;
+      overridePreviewData.forEach((item, idx) => {
+        const finalLevel = item.has_override && item.override?.threat_level ? item.override.threat_level : item.threat_level;
+        const baseLevel = item.threat_level ?? '—';
+        const identifier = item.mbPh ?? item.mbnm ?? item.override?.mbPh ?? item.override?.mbnm ?? `#${idx + 1}`;
+        const reason = item.override?.reason ?? '';
+        const actor = item.override?.by ?? '';
+        if (term && !matchesTerm(term, identifier, finalLevel, baseLevel, reason, actor)) {
+          return;
+        }
+        hasAny = true;
+        const card = document.createElement('div');
+        card.className = 'group-card';
+        card.innerHTML = `
+          <div class="flex" style="justify-content:space-between;align-items:center">
+            <span class="chip">${identifier}</span>
+            <span class="small">${item.has_override ? '已覆盖' : '计算结果'}</span>
+          </div>
+          <div class="flex" style="justify-content:space-between;align-items:center">
+            <div>最终威胁等级：<strong>${finalLevel ?? '—'}</strong></div>
+            <div class="small">原始：${baseLevel ?? '—'}</div>
+          </div>
+        `;
+        if (item.has_override && item.override) {
+          const info = document.createElement('div');
+          info.className = 'small';
+          info.textContent = `覆盖人: ${actor || '—'} · 理由: ${reason || '未提供'}`;
+          card.appendChild(info);
+        }
+        box.appendChild(card);
+      });
+      if (!hasAny) {
+        box.innerHTML = '<div class="small">未找到匹配的威胁结果</div>';
+      }
+    }
+
+    async function sendOverrideRequest(payload, successMessage, logType = 'info') {
+      try {
+        const resp = await fetchJSON('/calculate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        let hadSaved = false;
+        if (Array.isArray(resp.saved) && resp.saved.length) {
+          hadSaved = true;
+          resp.saved.forEach((item) => {
+            pushOverrideLogEntry('save', item, `标注等级 ${item.threat_level ?? ''}`, item.ts);
+          });
+        }
+        if (!hadSaved) {
+          pushOverrideLogEntry(logType, payload.override || payload, successMessage);
+        }
+        if (typeof resp.total_overrides === 'number') {
+          overrideTotalCount = resp.total_overrides;
+        }
+        renderOverrides();
+        showStatus('操作成功', successMessage || '请求已完成');
+        return resp;
+      } catch (err) {
+        showStatus('操作失败', err.message, 4500);
+        throw err;
+      }
     }
 
     function renderWeights() {
+      if (!configData) return;
       const level1Box = qs('#level1Weights');
       const level2Box = qs('#level2Weights');
       level1Box.innerHTML = '';
       level2Box.innerHTML = '';
 
       const level1 = configData.weights?.level1 || {};
-      Object.entries(level1).forEach(([key, val]) => {
+      const term = searchFilters.weights;
+      const level1Entries = Object.entries(level1).filter(([key, val]) => matchesTerm(term, key, val));
+      if (!level1Entries.length) {
+        level1Box.innerHTML = '<div class="small">未找到匹配的 Level1 权重</div>';
+      }
+      level1Entries.forEach(([key, val]) => {
         const row = document.createElement('div');
         row.className = 'flex';
         row.style.alignItems = 'center';
@@ -1042,7 +1425,16 @@
       });
 
       const level2 = configData.weights?.level2 || {};
-      Object.entries(level2).forEach(([groupKey, entries]) => {
+      const level2Entries = Object.entries(level2).filter(([groupKey, entries]) => {
+        if (!term) return true;
+        if (matchesTerm(term, groupKey)) return true;
+        return Object.entries(entries || {}).some(([key, val]) => matchesTerm(term, key, val));
+      });
+      if (!level2Entries.length) {
+        level2Box.innerHTML = '<div class="small">未找到匹配的 Level2 权重</div>';
+        return;
+      }
+      level2Entries.forEach(([groupKey, entries]) => {
         const card = document.createElement('div');
         card.className = 'group-card';
         card.innerHTML = `
@@ -1065,13 +1457,19 @@
     }
 
     function renderCalibration() {
+      if (!configData) return;
       const caliBox = qs('#calibrationContainer');
       const thresholdsBox = qs('#thresholdsContainer');
       caliBox.innerHTML = '';
       thresholdsBox.innerHTML = '';
 
       const calibration = configData.calibration || {};
-      Object.entries(calibration).forEach(([key, value]) => {
+      const term = searchFilters.calibration;
+      const calEntries = Object.entries(calibration).filter(([key, value]) => matchesTerm(term, key, JSON.stringify(value)));
+      if (!calEntries.length) {
+        caliBox.innerHTML = '<div class="small">未找到匹配的校准项</div>';
+      }
+      calEntries.forEach(([key, value]) => {
         const card = document.createElement('div');
         card.className = 'group-card';
         card.innerHTML = `
@@ -1094,7 +1492,13 @@
         caliBox.appendChild(card);
       });
 
-      (configData.thresholds || []).forEach((item, idx) => {
+      const thresholds = configData.thresholds || [];
+      let hasThreshold = false;
+      thresholds.forEach((item, idx) => {
+        if (term && !matchesTerm(term, item.label, item.level, item.min)) {
+          return;
+        }
+        hasThreshold = true;
         const row = document.createElement('div');
         row.className = 'card';
         row.innerHTML = `
@@ -1120,28 +1524,58 @@
         });
         thresholdsBox.appendChild(row);
       });
+      if (!hasThreshold) {
+        thresholdsBox.innerHTML = '<div class="small">未找到匹配的阈值</div>';
+      }
     }
 
     function renderMeta() {
-      qs('#metaNotes').value = configData.meta?.notes || '';
-      qs('#metaVersion').value = configData.version || '';
-      qs('#metaUpdated').value = configData.updated_at || '';
+      if (!configData) return;
+      const term = searchFilters.meta;
+      const notesInput = qs('#metaNotes');
+      const versionInput = qs('#metaVersion');
+      const updatedInput = qs('#metaUpdated');
+      const hint = qs('#metaSearchHint');
 
-      qs('#metaNotes').addEventListener('input', (e) => {
-        configData.meta = configData.meta || {};
-        configData.meta.notes = e.target.value;
-      });
-      qs('#metaVersion').addEventListener('input', (e) => {
-        configData.version = e.target.value;
-      });
-      qs('#metaUpdated').addEventListener('input', (e) => {
-        configData.updated_at = e.target.value;
-      });
+      if (notesInput) {
+        notesInput.value = configData.meta?.notes || '';
+        notesInput.oninput = (e) => {
+          configData.meta = configData.meta || {};
+          configData.meta.notes = e.target.value;
+        };
+      }
+      if (versionInput) {
+        versionInput.value = configData.version || '';
+        versionInput.oninput = (e) => {
+          configData.version = e.target.value;
+        };
+      }
+      if (updatedInput) {
+        updatedInput.value = configData.updated_at || '';
+        updatedInput.oninput = (e) => {
+          configData.updated_at = e.target.value;
+        };
+      }
+
+      if (hint) {
+        if (term) {
+          hint.textContent = matchesTerm(term, configData.meta?.notes, configData.version, configData.updated_at)
+            ? '备注或版本信息匹配当前搜索。'
+            : '备注/版本未匹配当前搜索，仍可编辑。';
+        } else {
+          hint.textContent = '';
+        }
+      }
 
       const unitsBox = qs('#metaUnits');
       unitsBox.innerHTML = '';
       const units = configData.meta?.units || {};
-      Object.entries(units).forEach(([key, val]) => {
+      const entries = Object.entries(units).filter(([key, val]) => matchesTerm(term, key, val));
+      if (!entries.length) {
+        unitsBox.innerHTML = '<div class="small">未找到匹配的单位</div>';
+        return;
+      }
+      entries.forEach(([key, val]) => {
         const row = document.createElement('div');
         row.className = 'flex';
         row.innerHTML = `
@@ -1277,6 +1711,140 @@
         renderWeights();
         showStatus('新增完成', `指标组 ${key} 已加入 ${defaultParent}`);
       });
+
+      const singleForm = qs('#overrideSingleForm');
+      if (singleForm) {
+        singleForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const idType = qs('#overrideIdType').value;
+          const idRaw = qs('#overrideIdValue').value.trim();
+          const threatLevel = qs('#overrideThreatLevel').value.trim();
+          const reason = qs('#overrideReason').value.trim();
+          const by = qs('#overrideBy').value.trim();
+          if (!idRaw) {
+            showStatus('校验失败', '请填写标识值');
+            return;
+          }
+          if (!threatLevel) {
+            showStatus('校验失败', '请填写威胁等级');
+            return;
+          }
+          const override = {
+            threat_level: threatLevel,
+            reason,
+            by
+          };
+          override[idType] = idType === 'mbPh' ? maybeNumber(idRaw) : idRaw;
+          try {
+            await sendOverrideRequest({override}, '单条标注已提交', 'save');
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      }
+
+      const batchForm = qs('#overrideBatchForm');
+      if (batchForm) {
+        batchForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const text = qs('#overrideBatchInput').value.trim();
+          if (!text) {
+            showStatus('校验失败', '请输入批量 JSON 数组');
+            return;
+          }
+          try {
+            const parsed = JSON.parse(text);
+            const list = Array.isArray(parsed) ? parsed : Array.isArray(parsed.override) ? parsed.override : null;
+            if (!Array.isArray(list) || !list.length) {
+              showStatus('校验失败', '请输入非空的标注数组');
+              return;
+            }
+            await sendOverrideRequest({override: list}, `批量写入 ${list.length} 条标注`, 'batch');
+          } catch (err) {
+            showStatus('解析错误', err.message, 4500);
+          }
+        });
+      }
+
+      const deleteForm = qs('#overrideDeleteForm');
+      if (deleteForm) {
+        deleteForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const idType = qs('#overrideDeleteType').value;
+          const idRaw = qs('#overrideDeleteValue').value.trim();
+          if (!idRaw) {
+            showStatus('校验失败', '请填写要删除的标注标识');
+            return;
+          }
+          const override = {action: 'delete'};
+          override[idType] = idType === 'mbPh' ? maybeNumber(idRaw) : idRaw;
+          try {
+            await sendOverrideRequest({override}, '已请求删除标注', 'delete');
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      }
+
+      const resetBtn = qs('#overrideResetBtn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', async () => {
+          if (!confirm('确认清空所有标注？')) return;
+          try {
+            await sendOverrideRequest({reset_overrides: true}, '已请求清空全部标注', 'reset');
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      }
+
+      const clearLogBtn = qs('#clearOverrideHistory');
+      if (clearLogBtn) {
+        clearLogBtn.addEventListener('click', () => {
+          overrideLog = [];
+          renderOverrideHistory();
+          showStatus('已清空', '本地标注记录已清空');
+        });
+      }
+
+      const parseBtn = qs('#parseOverridePreview');
+      if (parseBtn) {
+        parseBtn.addEventListener('click', () => {
+          const text = qs('#overridePreviewInput').value.trim();
+          if (!text) {
+            overridePreviewData = [];
+            renderOverridePreview();
+            showStatus('解析完成', '已清空预览结果');
+            return;
+          }
+          try {
+            const parsed = JSON.parse(text);
+            overridePreviewData = Array.isArray(parsed) ? parsed : [parsed];
+            renderOverridePreview();
+            showStatus('解析完成', `共 ${overridePreviewData.length} 条结果`);
+          } catch (err) {
+            showStatus('解析错误', err.message, 4500);
+          }
+        });
+      }
+
+      const scrollTop = qs('#scrollTopBtn');
+      if (scrollTop) {
+        scrollTop.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
+      }
+      const scrollBottom = qs('#scrollBottomBtn');
+      if (scrollBottom) {
+        scrollBottom.addEventListener('click', () => window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}));
+      }
+
+      attachSearch('#overviewSearch', 'overview', renderOverview);
+      attachSearch('#level3Search', 'level3', renderLevel3);
+      attachSearch('#cptSearch', 'cpt', renderCPT);
+      attachSearch('#rulesSearch', 'rules', renderRules);
+      attachSearch('#weightsSearch', 'weights', renderWeights);
+      attachSearch('#calibrationSearch', 'calibration', renderCalibration);
+      attachSearch('#metaSearch', 'meta', renderMeta);
+      attachSearch('#overrideSearch', 'overrides', renderOverrides);
 
       qsa('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
