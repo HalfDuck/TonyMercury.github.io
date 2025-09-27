@@ -149,6 +149,22 @@
       position: relative;
     }
 
+    .group-meta {
+      display: grid;
+      gap: 0.75rem;
+      margin: 0.75rem 0;
+    }
+
+    .group-meta label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
     label {
       display: flex;
       flex-direction: column;
@@ -475,6 +491,16 @@
         <button class="muted-btn rename-group">重命名</button>
         <button class="danger delete-group">删除</button>
       </div>
+      <div class="group-meta">
+        <label>
+          所属一级分类
+          <select class="group-parent"></select>
+        </label>
+        <label>
+          二级权重
+          <input type="number" step="0.01" class="parent-weight" />
+        </label>
+      </div>
       <div class="metrics"></div>
       <button class="muted-btn add-metric" style="align-self:flex-start">新增指标</button>
     </div>
@@ -500,6 +526,53 @@
 
     const qs = (sel, parent = document) => parent.querySelector(sel);
     const qsa = (sel, parent = document) => Array.from(parent.querySelectorAll(sel));
+
+    function getLevel1Parents() {
+      return Object.keys(configData?.weights?.level2 || {});
+    }
+
+    function findLevel2Parent(groupKey) {
+      const level2 = configData?.weights?.level2 || {};
+      for (const [parent, entries] of Object.entries(level2)) {
+        if (entries && Object.prototype.hasOwnProperty.call(entries, groupKey)) {
+          return {parent, weight: entries[groupKey]};
+        }
+      }
+      return {parent: null, weight: 0};
+    }
+
+    function moveLevel3Group(groupKey, newParent, weightValue = 0) {
+      if (!configData?.weights) return;
+      configData.weights.level2 = configData.weights.level2 || {};
+      const level2 = configData.weights.level2;
+      const numericWeight = Number(weightValue);
+      const finalWeight = isFinite(numericWeight) ? numericWeight : 0;
+      for (const [parent, entries] of Object.entries(level2)) {
+        if (entries && Object.prototype.hasOwnProperty.call(entries, groupKey)) {
+          if (parent === newParent) {
+            entries[groupKey] = finalWeight;
+            return parent;
+          }
+          delete entries[groupKey];
+          break;
+        }
+      }
+      level2[newParent] = level2[newParent] || {};
+      level2[newParent][groupKey] = finalWeight;
+      return newParent;
+    }
+
+    function renameLevel3GroupKey(oldKey, newKey) {
+      const level2 = configData?.weights?.level2 || {};
+      for (const entries of Object.values(level2)) {
+        if (entries && Object.prototype.hasOwnProperty.call(entries, oldKey)) {
+          const numericWeight = Number(entries[oldKey]);
+          entries[newKey] = isFinite(numericWeight) ? numericWeight : 0;
+          delete entries[oldKey];
+          return;
+        }
+      }
+    }
 
     function showStatus(title, message, timeout = 2800) {
       const bar = qs('#statusBar');
@@ -608,7 +681,19 @@
     function renderLevel3() {
       const container = qs('#level3Container');
       container.innerHTML = '';
-      const level3 = configData.weights?.level3 || {};
+      configData.weights = configData.weights || {};
+      configData.weights.level2 = configData.weights.level2 || {};
+      configData.weights.level3 = configData.weights.level3 || {};
+      const level3 = configData.weights.level3;
+      const level3Keys = new Set(Object.keys(level3));
+      Object.values(configData.weights.level2).forEach((entries) => {
+        if (!entries) return;
+        Object.keys(entries).forEach((child) => {
+          if (!level3Keys.has(child)) {
+            delete entries[child];
+          }
+        });
+      });
       const template = qs('#level3GroupTemplate');
       const metricTemplate = qs('#metricRowTemplate');
 
@@ -617,6 +702,74 @@
         const nameInput = node.querySelector('.group-name');
         nameInput.value = groupKey;
         nameInput.dataset.original = groupKey;
+
+        const parentSelect = node.querySelector('.group-parent');
+        const weightInput = node.querySelector('.parent-weight');
+        const parents = getLevel1Parents();
+        const parentInfo = findLevel2Parent(groupKey);
+        let currentParent = parentInfo.parent;
+        let currentWeight = Number(parentInfo.weight ?? 0);
+        if (!isFinite(currentWeight)) currentWeight = 0;
+
+        parentSelect.innerHTML = '';
+        if (!parents.length) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = '未配置一级分类';
+          parentSelect.appendChild(opt);
+          parentSelect.disabled = true;
+          weightInput.disabled = true;
+        } else {
+          parents.forEach((parent) => {
+            const opt = document.createElement('option');
+            opt.value = parent;
+            opt.textContent = parent;
+            if (parent === currentParent) opt.selected = true;
+            parentSelect.appendChild(opt);
+          });
+
+          if (!currentParent) {
+            currentParent = parents[0];
+            moveLevel3Group(groupKey, currentParent, currentWeight);
+            parentSelect.value = currentParent;
+          }
+
+          parentSelect.disabled = false;
+          weightInput.disabled = false;
+        }
+
+        weightInput.value = currentWeight;
+
+        parentSelect.addEventListener('change', () => {
+          const newParent = parentSelect.value;
+          const weightVal = parseFloat(weightInput.value);
+          const finalWeight = isFinite(weightVal) ? weightVal : 0;
+          currentParent = moveLevel3Group(groupKey, newParent, finalWeight) || newParent;
+          currentWeight = finalWeight;
+          renderWeights();
+          showStatus('已更新', `${groupKey} 归属调整到 ${newParent}`);
+        });
+
+        weightInput.addEventListener('input', () => {
+          const weightVal = parseFloat(weightInput.value);
+          if (!isFinite(weightVal)) return;
+          currentWeight = weightVal;
+          if (currentParent) {
+            moveLevel3Group(groupKey, currentParent, currentWeight);
+            renderWeights();
+          }
+        });
+
+        weightInput.addEventListener('blur', () => {
+          const weightVal = parseFloat(weightInput.value);
+          if (isFinite(weightVal)) return;
+          currentWeight = 0;
+          weightInput.value = 0;
+          if (currentParent) {
+            moveLevel3Group(groupKey, currentParent, currentWeight);
+            renderWeights();
+          }
+        });
 
         node.querySelector('.rename-group').addEventListener('click', () => {
           const newName = nameInput.value.trim();
@@ -627,16 +780,25 @@
             nameInput.value = orig;
             return;
           }
-          configData.weights.level3[newName] = configData.weights.level3[orig];
+          const metricsCopy = configData.weights.level3[orig];
+          renameLevel3GroupKey(orig, newName);
+          configData.weights.level3[newName] = metricsCopy;
           delete configData.weights.level3[orig];
           renderLevel3();
+          renderWeights();
           showStatus('已更新', `组 ${orig} -> ${newName}`);
         });
 
         node.querySelector('.delete-group').addEventListener('click', () => {
           if (!confirm(`删除指标组 ${groupKey}?`)) return;
+          const parentInfo = findLevel2Parent(groupKey);
+          if (parentInfo.parent && configData.weights?.level2?.[parentInfo.parent]) {
+            delete configData.weights.level2[parentInfo.parent][groupKey];
+          }
           delete configData.weights.level3[groupKey];
           renderLevel3();
+          renderWeights();
+          showStatus('已删除', `指标组 ${groupKey} 已移除`);
         });
 
         const metricBox = node.querySelector('.metrics');
@@ -1057,14 +1219,25 @@
       qs('#addLevel3Group').addEventListener('click', () => {
         configData.weights = configData.weights || {};
         configData.weights.level3 = configData.weights.level3 || {};
+        configData.weights.level2 = configData.weights.level2 || {};
         let idx = 1;
         let key = `new_group_${idx}`;
         while (configData.weights.level3[key]) {
           idx += 1;
           key = `new_group_${idx}`;
         }
+        const parents = getLevel1Parents();
+        if (!parents.length) {
+          showStatus('新增失败', '请先在 Level2 配置一级分类');
+          return;
+        }
+        const defaultParent = parents[0];
+        configData.weights.level2[defaultParent] = configData.weights.level2[defaultParent] || {};
+        configData.weights.level2[defaultParent][key] = 0;
         configData.weights.level3[key] = {};
         renderLevel3();
+        renderWeights();
+        showStatus('新增完成', `指标组 ${key} 已加入 ${defaultParent}`);
       });
 
       qsa('.tab').forEach(tab => {
