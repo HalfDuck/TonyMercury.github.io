@@ -37,7 +37,7 @@ import pandas as pd
 
 EARTH_RADIUS_M = 6_371_000.0
 
-_HISTORY_REQUIRED_COLUMNS = {"ph", "time", "lat", "lon"}
+_HISTORY_REQUIRED_COLUMNS = {"time", "lat", "lon"}
 _HISTORY_NUMERIC_FIELDS = ["mbc", "mbv", "mbh", "lon", "lat"]
 _HISTORY_METADATA_DEFAULTS: Dict[str, object] = {
     "mbmc": "",
@@ -73,6 +73,10 @@ _DEFAULT_OBSERVED_ALIASES = {
     "speed": "mbv",
     "heading": "mbc",
 }
+
+
+_AUTO_TRACK_TIME_GAP_MIN = 120.0
+_AUTO_TRACK_DISTANCE_GAP_M = 30_000.0
 
 
 @dataclass
@@ -533,7 +537,11 @@ def build_network_from_records(
     records instead of requiring an intermediate CSV file.
     """
 
-    df = _dataframe_from_records(records, columns)
+    df = _dataframe_from_records(
+        records,
+        columns,
+        default_columns=("lon", "lat", "mbc", "mbv", "time"),
+    )
     df = _rename_with_aliases(df, _DEFAULT_HISTORY_ALIASES)
     df = _rename_with_aliases(df, field_aliases)
     df = _ensure_history_defaults(df, defaults)
@@ -550,7 +558,11 @@ def load_observed_points_from_records(
 ) -> List[TrackPoint]:
     """Convert observation records to :class:`TrackPoint` objects."""
 
-    df = _dataframe_from_records(records, columns)
+    df = _dataframe_from_records(
+        records,
+        columns,
+        default_columns=("lon", "lat", "mbc", "mbv", "time"),
+    )
     df = _rename_with_aliases(df, _DEFAULT_OBSERVED_ALIASES)
     df = _rename_with_aliases(df, field_aliases)
     df = _normalise_observed_dataframe(df)
@@ -736,9 +748,6 @@ def _normalise_history_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise ValueError(f"缺少必要字段: {sorted(missing)}")
     df = df.copy()
-    if df["ph"].isna().any():
-        raise ValueError("历史航迹记录缺少唯一标识 ph。")
-    df["ph"] = df["ph"].astype(str)
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
     if df["time"].isna().any():
         raise ValueError("存在无法解析的时间戳。")
@@ -746,6 +755,11 @@ def _normalise_history_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         if field in df.columns:
             df[field] = pd.to_numeric(df[field], errors="coerce")
     df = df.dropna(subset=["lat", "lon", "time"])
+    if "ph" not in df.columns:
+        df["ph"] = _auto_track_ids(df)
+    elif df["ph"].isna().any():
+        raise ValueError("历史航迹记录缺少唯一标识 ph。")
+    df["ph"] = df["ph"].astype(str)
     return df
 
 
@@ -772,6 +786,7 @@ def _normalise_observed_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 def _dataframe_from_records(
     records: Sequence[Mapping[str, object] | Sequence[object]] | pd.DataFrame,
     columns: Optional[Sequence[str]] = None,
+    default_columns: Optional[Sequence[str]] = None,
 ) -> pd.DataFrame:
     if isinstance(records, pd.DataFrame):
         return records.copy()
@@ -783,7 +798,9 @@ def _dataframe_from_records(
     if isinstance(first, Mapping):
         return pd.DataFrame(records)
     if columns is None:
-        raise ValueError("当记录以序列形式提供时需要 columns 参数。")
+        if default_columns is None:
+            raise ValueError("当记录以序列形式提供时需要 columns 参数。")
+        columns = default_columns
     return pd.DataFrame(records, columns=list(columns))
 
 
@@ -796,6 +813,41 @@ def _rename_with_aliases(df: pd.DataFrame, aliases: Optional[Mapping[str, str]])
     return df.rename(columns=rename_map)
 
 
+def _auto_track_ids(df: pd.DataFrame) -> pd.Series:
+    """Assign synthetic track ids when the input lacks a grouping column."""
+
+    if df.empty:
+        return pd.Series(dtype=str)
+    track_ids: List[str] = []
+    current_track = 0
+    previous_time: Optional[pd.Timestamp] = None
+    previous_lat: Optional[float] = None
+    previous_lon: Optional[float] = None
+    for idx, row in df.iterrows():
+        new_track = False
+        time_value: pd.Timestamp = row["time"]
+        lat_value = float(row["lat"])
+        lon_value = float(row["lon"])
+        if previous_time is not None:
+            if time_value < previous_time:
+                new_track = True
+            else:
+                delta_minutes = (time_value - previous_time).total_seconds() / 60.0
+                if delta_minutes > _AUTO_TRACK_TIME_GAP_MIN:
+                    new_track = True
+            if not new_track and previous_lat is not None and previous_lon is not None:
+                distance = haversine_m(previous_lat, previous_lon, lat_value, lon_value)
+                if distance > _AUTO_TRACK_DISTANCE_GAP_M:
+                    new_track = True
+        if new_track:
+            current_track += 1
+        track_ids.append(f"auto_{current_track:05d}")
+        previous_time = time_value
+        previous_lat = lat_value
+        previous_lon = lon_value
+    return pd.Series(track_ids, index=df.index, dtype=str)
+
+
 def _ensure_history_defaults(
     df: pd.DataFrame,
     defaults: Optional[Mapping[str, object]] = None,
@@ -804,13 +856,8 @@ def _ensure_history_defaults(
     combined_defaults = dict(_HISTORY_METADATA_DEFAULTS)
     if defaults:
         combined_defaults.update(defaults)
-    if "ph" not in df.columns:
-        if "ph" not in combined_defaults:
-            raise ValueError("历史航迹数据缺少 ph 字段，且未提供默认值。")
-        df["ph"] = combined_defaults["ph"]
-    else:
-        if "ph" in combined_defaults:
-            df["ph"] = df["ph"].fillna(combined_defaults["ph"])
+    if "ph" in df.columns and "ph" in combined_defaults:
+        df["ph"] = df["ph"].fillna(combined_defaults["ph"])
     for column, value in combined_defaults.items():
         if column == "ph":
             continue

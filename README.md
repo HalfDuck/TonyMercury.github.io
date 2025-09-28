@@ -94,6 +94,26 @@ history uses ``rpLong`` and ``h`` columns you can call::
 The helper returns the same dictionary structure as the CLI, making it easy to
 integrate into web services.
 
+If you only have the numeric track samples (e.g. ``lon``, ``lat``, ``h`` for
+course, ``v`` for speed and ``time``) you can pass them as simple Python lists
+without specifying any aliases or column names:
+
+```python
+history_points = [[hh["rpLong"], hh["lat"], hh["h"], hh["v"], hh.get("time")]
+                  for hh in history_source]
+observed_points = [[pt["rpLong"], pt["lat"], pt["h"], pt["v"], pt.get("time")]
+                   for pt in latest_observations]
+
+result = predict_route_from_records(history_points, observed_points,
+                                    destination=(23.75, 132.70))
+```
+
+The loader assumes the order ``[lon, lat, course, speed, time]`` and will
+automatically split the history into distinct tracks whenever there is a large
+time gap or a sudden geographic jump. This keeps the supported ship type list
+and matched-track metadata intact even when the source system only provides the
+bare track samples.
+
 ## Visualising Predictions Programmatically
 
 The helper :func:`route_prediction.save_prediction_plot` function accepts the
