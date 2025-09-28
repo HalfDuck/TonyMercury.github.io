@@ -21,7 +21,8 @@ class LandMask:
 
     def intersects(self, lon: float, lat: float) -> bool:
         point = Point(lon, lat)
-        for polygon in self.index.query(point):
+        for candidate in self.index.query(point):
+            polygon = self._resolve_candidate(candidate)
             if polygon.contains(point):
                 return True
         return False
@@ -35,4 +36,16 @@ class LandMask:
         if not distances:
             return float("inf")
         return min(distances)
+
+    def _resolve_candidate(self, candidate):
+        """Normalize STRtree query results across Shapely versions."""
+        # Shapely < 2 returns geometries directly, while >= 2 returns integer indices.
+        if hasattr(candidate, "contains"):
+            return candidate
+        try:
+            return self.polygons[int(candidate)]
+        except (TypeError, ValueError, IndexError):
+            raise TypeError(
+                "Unsupported STRtree query result type: " f"{type(candidate)!r}"
+            ) from None
 
