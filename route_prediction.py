@@ -35,6 +35,12 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 import matplotlib.pyplot as plt
 import pandas as pd
 
+import matplotlib.pyplot as plt
+
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 黑体（支持中文）
+plt.rcParams['axes.unicode_minus'] = False    # 正常显示负号
+
+
 EARTH_RADIUS_M = 6_371_000.0
 
 
