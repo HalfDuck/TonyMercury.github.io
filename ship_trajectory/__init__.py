@@ -8,6 +8,7 @@ from .data import (
 )
 from .landmask import LandMask
 from .model import TrajectoryTransformer
+from .predict import PredictionResult, predict_sequence
 
 __all__ = [
     "ModelConfig",
@@ -16,4 +17,6 @@ __all__ = [
     "VesselFeatureEncoder",
     "LandMask",
     "TrajectoryTransformer",
+    "PredictionResult",
+    "predict_sequence",
 ]

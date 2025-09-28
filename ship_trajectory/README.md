@@ -15,6 +15,7 @@ This directory contains a full training pipeline for learning to forecast naval 
 - [`landmask.py`](landmask.py): Thin wrapper around the provided GeoJSON polygons using `shapely` to support land-intersection checks.
 - [`model.py`](model.py): The Transformer encoder-decoder with learned future queries and auxiliary heads for speed, heading, and destination prediction.
 - [`train.py`](train.py): End-to-end training/evaluation script that enforces land avoidance, computes geodesic metrics, and reports 1 NM accuracy.
+- [`predict.py`](predict.py): Single-sample inference and plotting utilities that visualise history, predictions, and ground truth tracks.
 - [`configs/trajectory_transformer.yaml`](../configs/trajectory_transformer.yaml): Example experiment configuration.
 
 ## Data preparation
@@ -39,6 +40,27 @@ The script will:
 5. Penalize predictions that intersect land polygons and report one-hour geodesic errors.
 
 Metrics include mean per-step geodesic error, final-step error, and the percentage of trajectories finishing within **1 nautical mile** of ground truth.
+
+## Inference & visualisation
+
+After training completes, load the best checkpoint and generate a qualitative plot for any split/sample:
+
+```bash
+python -m ship_trajectory.predict \
+  --config configs/trajectory_transformer.yaml \
+  --checkpoint outputs/exp1/best.pt \
+  --split test \
+  --index 0 \
+  --output outputs/exp1/sample0.png
+```
+
+The command also prints per-step mean error, final 60-minute error, and whether the trajectory lands within **1 NM**. The saved figure overlays:
+
+- Blue circles: historical input trajectory.
+- Green circles: ground-truth future path.
+- Red circles: model prediction (with an `X` on the predicted endpoint).
+
+For programmatic access, import `predict_sequence` and call it directly to obtain the `PredictionResult` dataclass with NumPy arrays and metrics.
 
 ## Extending to battlefield and installation effects
 
