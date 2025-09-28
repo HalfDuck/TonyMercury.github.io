@@ -181,7 +181,11 @@ class TrajectoryDataset(Dataset):
             lons = track[self.config.longitude_column].to_numpy(dtype=np.float32)
             speeds = track[self.config.speed_column].to_numpy(dtype=np.float32)
             courses = track[self.config.course_column].to_numpy(dtype=np.float32)
-            headings = track[self.config.heading_column].fillna(courses).to_numpy(dtype=np.float32)
+            headings = (
+                track[self.config.heading_column]
+                .fillna(track[self.config.course_column])
+                .to_numpy(dtype=np.float32)
+            )
 
             static_encoded = self.encoder.encode(track.iloc[0])
             static_tensor = torch.tensor([
