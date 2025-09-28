@@ -144,6 +144,20 @@ class RouteNetwork:
         return best_node, best_distance
 
 
+def _normalise_text(value: object) -> str:
+    """Return a clean string for display fields, dropping NaN values."""
+
+    if value is None:
+        return ""
+    # pandas represents missing values as floats (NaN) which compare unequal to
+    # themselves.  Guard against both float("nan") and pandas NA scalars.
+    if isinstance(value, float) and math.isnan(value):
+        return ""
+    if pd.isna(value):
+        return ""
+    return str(value).strip()
+
+
 class RouteNetworkBuilder:
     """Build a reusable network from historical tracks."""
 
@@ -162,7 +176,7 @@ class RouteNetworkBuilder:
             track = self._ingest_track(track_id, group)
             if track:
                 self._tracks.append(track)
-        supported_types = sorted(t for t in self._supported_types if t)
+        supported_types = sorted(self._supported_types)
         return RouteNetwork(
             nodes=self._nodes,
             edges=self._edges,
@@ -224,12 +238,14 @@ class RouteNetworkBuilder:
             return None
 
         first_row = group_sorted.iloc[0]
-        self._supported_types.add(first_row.type)
+        ship_type = _normalise_text(first_row.type)
+        if ship_type:
+            self._supported_types.add(ship_type)
         return HistoricalTrack(
             track_id=str(track_id),
-            ship_name=str(first_row.mbmc),
-            country=str(first_row.gjdq),
-            ship_type=str(first_row.type),
+            ship_name=_normalise_text(first_row.mbmc),
+            country=_normalise_text(first_row.gjdq),
+            ship_type=ship_type,
             points=points,
             node_ids=node_ids,
         )
