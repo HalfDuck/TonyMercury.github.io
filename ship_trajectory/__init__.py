@@ -7,6 +7,7 @@ from .data import (
     VesselFeatureEncoder,
 )
 from .landmask import LandMask
+from .interface import TrajectoryInferenceEngine
 from .model import TrajectoryTransformer
 from .predict import PredictionResult, predict_sequence
 
@@ -19,4 +20,5 @@ __all__ = [
     "TrajectoryTransformer",
     "PredictionResult",
     "predict_sequence",
+    "TrajectoryInferenceEngine",
 ]
