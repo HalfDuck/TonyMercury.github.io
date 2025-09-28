@@ -11,11 +11,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from .config import ExperimentConfig
-from .data import METERS_PER_DEGREE_LAT, TrajectoryDataModule, meters_per_degree_lon
-from .landmask import LandMask
-from .model import TrajectoryTransformer
-from .train import haversine_distance, load_config, set_seed
+if __package__ in (None, ""):
+    # Allow running as a standalone script (e.g. `python predict.py`).
+    import sys
+
+    package_root = Path(__file__).resolve().parent.parent
+    if str(package_root) not in sys.path:
+        sys.path.insert(0, str(package_root))
+
+    from ship_trajectory.config import ExperimentConfig
+    from ship_trajectory.data import (
+        METERS_PER_DEGREE_LAT,
+        TrajectoryDataModule,
+        meters_per_degree_lon,
+    )
+    from ship_trajectory.landmask import LandMask
+    from ship_trajectory.model import TrajectoryTransformer
+    from ship_trajectory.train import haversine_distance, load_config, set_seed
+else:
+    from .config import ExperimentConfig
+    from .data import METERS_PER_DEGREE_LAT, TrajectoryDataModule, meters_per_degree_lon
+    from .landmask import LandMask
+    from .model import TrajectoryTransformer
+    from .train import haversine_distance, load_config, set_seed
 
 NAUTICAL_MILE_METERS = 1852.0
 
